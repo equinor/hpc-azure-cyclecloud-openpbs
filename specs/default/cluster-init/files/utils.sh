@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# /etc/os-release exists for all RHEL, Debiam , Ubuntu and more
+source /etc/os-release || exit 1
+
 source "${CYCLECLOUD_PROJECT_PATH}/default/files/default.sh" || exit 1
 
 function fail() {
@@ -30,7 +33,8 @@ function get_package_name() {
         if [[ "${PBSPRO_VERSION%%.*}" -lt 20 ]]; then
             echo "pbspro-${package_type}-${PBSPRO_VERSION}.x86_64.rpm"
         else
-            echo "openpbs-${package_type}-${PBSPRO_VERSION}.x86_64.rpm"
+            # VERSION_ID if from /etc/os-release
+            echo "openpbs-${package_type}-${PBSPRO_VERSION}.el${VERSION_ID%%.*}.x86_64.rpm"
         fi
     else
         echo "$package_name"
