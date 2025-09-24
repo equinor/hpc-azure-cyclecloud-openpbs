@@ -1,5 +1,7 @@
 #!/bin/bash
 
+exit 0 # We include this in Equinor images
+
 PLATFORM_VERSION=$(jetpack props get os.version) || fail
 
 if [[ "${PLATFORM_VERSION%%.*}" -ge 8 ]]; then
