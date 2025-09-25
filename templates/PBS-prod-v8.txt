@@ -598,7 +598,7 @@ Order=40
         [[[parameter PBSVersion]]]
         Label = PBS Version
         Config.Plugin = pico.form.Dropdown
-        Config.Entries := {[Label="OpenPBS v23, EL 7+8"; Value="23.06.06-0"], [Label="OpenPBS v22, EL 7+8"; Value="22.05.11-0"], [Label="OpenPBS v20, EL 7+8"; Value="20.0.1-0"]}
+        Config.Entries := {[Label="OpenPBS v23, EL 8+9"; Value="23.06.06-0"], [Label="OpenPBS v22, EL 7+8"; Value="22.05.11-0"], [Label="OpenPBS v20, EL 7+8"; Value="20.0.1-0"]}
         DefaultValue = 23.06.06-0
 
         [[[parameter PBSspec]]]
