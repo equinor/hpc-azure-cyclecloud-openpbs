@@ -1,0 +1,1758 @@
+
+##############################################################################
+## Cluster Configuration File 
+## 
+## For configuration reference, go to
+## https://docs.microsoft.com/en-us/azure/cyclecloud/cluster-references/configuration-reference?view=cyclecloud-8
+##
+##############################################################################
+
+[cluster PBS-prod-v8]
+FormLayout = selectionpanel
+Category = Equinor Production
+IconURL = https://communicationtoolbox.equinor.com/original/gallery/12366/files/original/816ece30-56bf-40f3-b362-56e96381f12f.png
+
+Autoscale = $Autoscale
+
+    [[node defaults]]
+    UsePublicNetwork = $UsePublicNetwork
+    EnableAcceleratedNetworking = $AcceleratedNetwork
+    AssociatePublicIpAddress = $UsePublicNetwork
+    Credentials = $Credentials
+    #ImageName = $DefaultImageName
+    ImageName = ${strcat(SIGurl,"/",DefaultImageName,"/versions/",ImageVersion)}
+    SubnetId = $SubnetId
+    Region = $Region
+    KeyPairLocation = ~/.ssh/cyclecloud.pem
+    Zone = $NodeZone
+    AwaitInstallationTimeout = $InstallTimeout
+    AwaitInstallation = true
+    InstallJetpack = true
+    tags.CostAllocationType = WBS
+    tags.CostAllocationCode = $costallocationcode
+    Azure.Identities = $ManagedServiceIdentity
+    CloudInit = '''#cloud-config
+ssh_pwauth: yes
+
+# Uncomment for ephemeral disk on /tmp
+#mounts:
+#- [ ephemeral0, /tmp ]
+
+# NOTE: Disabling repos must be done one at time
+#       For isolated compute nodes, do --set-disabled '*' 
+#       (save for all first - then modify q1-q9)
+#       
+runcmd:
+  - date > /tmp/cloud-init-date.log
+  - sestatus > /tmp/sestatus.log
+  - chmod a+rwt /tmp
+  - /usr/sbin/restorecon -R /tmp
+  - setenforce 0
+  - ls -al /var/lib/rpm > /tmp/var-lib-rpm.log
+  - sed -i 's/^proxy=/#proxy=/' /etc/yum.conf /etc/dnf/dnf.conf
+  - sed -i 's/^failovermethod/#failovermethod/' /etc/yum.repos.d/opm.repo
+  - dnf config-manager --set-disabled cyclecloud 
+  - dnf config-manager --set-disabled epel
+  - dnf config-manager --set-disabled cuda
+  - dnf config-manager --set-disabled azure-cli
+  - systemctl stop update-client-package.timer
+  - systemctl disable update-client-package.timer
+  - systemctl stop update-client-package.service
+  - systemctl disable update-client-package.service
+  - systemctl list-units > /tmp/list-units.log
+  - mv /usr/local/bin/update-client-package.sh /usr/local/bin/update-client-package.sh-$$
+  - date > /tmp/cloud-init-done.log
+'''
+
+        [[[cluster-init sharedequinor]]]
+        project = shared-equinor
+        spec = $SharedEquinorSpec
+        version = 1.0.0
+
+        [[[cluster-init pbspro:default:]]]
+	    version = $PBSspec
+        Optional = false
+
+        [[[configuration]]]
+        pbspro.version = $PBSVersion
+        pbspro.professional = false
+        # Used in specs/default/cluster-init/files/utils.sh
+        pbspro.scheduler = ${strcat(toLower(substr(ClusterName,0,4)),"-lc",substr(ClusterName,-1,1),"m")}
+
+        # For fast spin-up after Deallocate, force an immediate re-converge on boot
+        cyclecloud.converge_on_boot = true
+        cyclecloud.enable_chef = false        
+        SIGurl=$SIGurl
+	    host.config.directories = $HostConfigDirectories
+
+        # Disable normal NFS exports and mounts
+        cyclecloud.mounts.sched.disabled = true
+        cyclecloud.mounts.shared.disabled = true
+        cyclecloud.exports.sched.disabled = true
+        cyclecloud.exports.shared.disabled = true
+        cyclecloud.exports.sched.samba.enabled = false
+        cyclecloud.exports.shared.samba.enabled = false
+        cyclecloud.exports.defaults.samba.enabled = false      
+        cshared.server.legacy_links_disabled = true
+        #
+        # From CC7
+        #
+        cyclecloud.hosts.standalone_dns.enabled=false
+        cyclecloud.selinux.policy = permissive
+        cyclecloud.timezone = ${TZREGION[Region]}
+        cyclecloud.replace_sudoers = false
+        lustre.cluster_name = $LustreClusterName
+        lustre.version = "2.12"
+        lustre.mount_point = $LustreMountPoint
+        lustre.options = $LustreMountOptions
+        SharedEquinorSpec = $SharedEquinorSpec
+        lustre.No_Lustre = $no_lustre
+	    #boot disk
+	
+     	[[[volume boot]]]
+      		Size = $BootDiskSize
+      		StorageAccountType = $BootDiskType
+      		#DiskIOPSReadWrite = 38400
+      		#DiskMBPSReadWrite = 2000
+
+
+        # 
+        # Equinor mounts
+        #
+        [[[configuration cyclecloud.mounts.prog]]]
+        type = nfs
+        mountpoint = /prog
+        export_path = ${substr(NFSExportProg,(substr(NFSExportProg,7,1) == ":" ) ? 8 : (substr(NFSExportProg,8,1) == ":" ) ? 9 : (substr(NFSExportProg,9,1) == ":" ) ? 10 : (substr(NFSExportProg,10,1) == ":" ) ? 11 : (substr(NFSExportProg,11,1) == ":" ) ? 12 : (substr(NFSExportProg,12,1) == ":" ) ? 13 : (substr(NFSExportProg,13,1) == ":" ) ? 14 : 15 )}
+        options = hard,intr,nfsvers=3,proto=tcp,nofail,_netdev
+        address = ${substr(NFSExportProg,0,(substr(NFSExportProg,7,1) == ":" ) ? 7 : (substr(NFSExportProg,8,1) == ":" ) ? 8 : (substr(NFSExportProg,9,1) == ":" ) ? 9 : (substr(NFSExportProg,10,1) == ":" ) ? 10 : (substr(NFSExportProg,11,1) == ":" ) ? 11 : (substr(NFSExportProg,12,1) == ":" ) ? 12 : (substr(NFSExportProg,13,1) == ":" ) ? 13 : 14 )}
+	    disabled = ${(adjoin_am)}
+
+        [[[configuration cyclecloud.mounts.private]]]
+        type = nfs
+        mountpoint = /private
+        export_path = ${substr(NFSExportPrivate,(substr(NFSExportPrivate,7,1) == ":" ) ? 8 : (substr(NFSExportPrivate,8,1) == ":" ) ? 9 : (substr(NFSExportPrivate,9,1) == ":" ) ? 10 : (substr(NFSExportPrivate,10,1) == ":" ) ? 11 : (substr(NFSExportPrivate,11,1) == ":" ) ? 12 : (substr(NFSExportPrivate,12,1) == ":" ) ? 13 : (substr(NFSExportPrivate,13,1) == ":" ) ? 14 : 15 )}
+        options = hard,intr,nfsvers=3,proto=tcp,nofail,_netdev
+        address = ${substr(NFSExportPrivate,0,(substr(NFSExportPrivate,7,1) == ":") ? 7 : (substr(NFSExportPrivate,8,1) == ":") ? 8 : (substr(NFSExportPrivate,9,1) == ":") ? 9 : (substr(NFSExportPrivate,10,1) == ":") ? 10 : (substr(NFSExportPrivate,11,1) == ":") ? 11 : (substr(NFSExportPrivate,12,1) == ":") ? 12 : (substr(NFSExportPrivate,13,1) == ":") ? 13 : 14 )}
+	    disabled = ${(adjoin_am)}
+
+        [[[configuration cyclecloud.mounts.scratch]]]
+        type = nfs
+        mountpoint = $NFSMountPointScratch
+        export_path = ${substr(NFSExportScratch,(substr(NFSExportScratch,7,1) == ":" ) ? 8 : (substr(NFSExportScratch,8,1) == ":" ) ? 9 : (substr(NFSExportScratch,9,1) == ":" ) ? 10 : (substr(NFSExportScratch,10,1) == ":" ) ? 11 : (substr(NFSExportScratch,11,1) == ":" ) ? 12 : (substr(NFSExportScratch,12,1) == ":" ) ? 13 : (substr(NFSExportScratch,13,1) == ":" ) ? 14 : 15 )}
+        options = hard,intr,nfsvers=3,proto=tcp,nofail,_netdev
+        address = ${substr(NFSExportScratch,0,(substr(NFSExportScratch,7,1) == ":") ? 7 : (substr(NFSExportScratch,8,1) == ":") ? 8 : (substr(NFSExportScratch,9,1) == ":") ? 9 : (substr(NFSExportScratch,10,1) == ":") ? 10 : (substr(NFSExportScratch,11,1) == ":") ? 11 : (substr(NFSExportScratch,12,1) == ":") ? 12 : (substr(NFSExportScratch,13,1) == ":") ? 13 : 14 )}
+	    disabled = ${(adjoin_am)}
+
+        [[[configuration cyclecloud.mounts.project]]]
+        type = nfs
+        mountpoint = $NFSMountPointProject
+        export_path = ${substr(NFSExportProject,(substr(NFSExportProject,7,1) == ":" ) ? 8 : (substr(NFSExportProject,8,1) == ":" ) ? 9 : (substr(NFSExportProject,9,1) == ":" ) ? 10 : (substr(NFSExportProject,10,1) == ":" ) ? 11 : (substr(NFSExportProject,11,1) == ":" ) ? 12 : (substr(NFSExportProject,12,1) == ":" ) ? 13 : (substr(NFSExportProject,13,1) == ":" ) ? 14 : 15 )}
+        options = hard,intr,nfsvers=3,proto=tcp,nofail,_netdev
+        address = ${substr(NFSExportProject,0,(substr(NFSExportProject,7,1) == ":") ? 7 : (substr(NFSExportProject,8,1) == ":") ? 8 : (substr(NFSExportProject,9,1) == ":") ? 9 : (substr(NFSExportProject,10,1) == ":") ? 10 : (substr(NFSExportProject,11,1) == ":") ? 11 : (substr(NFSExportProject,12,1) == ":") ? 12 : (substr(NFSExportProject,13,1) == ":") ? 13 : 14 )}
+	    disabled = ${(adjoin_am)}
+
+        [[[configuration cyclecloud.mounts.work]]]
+        type = nfs
+        mountpoint = $NFSMountPointWork
+        export_path = ${substr(NFSExportWork,(substr(NFSExportWork,7,1) == ":" ) ? 8 : (substr(NFSExportWork,8,1) == ":" ) ? 9 : (substr(NFSExportWork,9,1) == ":" ) ? 10 : (substr(NFSExportWork,10,1) == ":" ) ? 11 : (substr(NFSExportWork,11,1) == ":" ) ? 12 : (substr(NFSExportWork,12,1) == ":" ) ? 13 : (substr(NFSExportWork,13,1) == ":" ) ? 14 : 15 )}
+        options = hard,intr,nfsvers=3,proto=tcp,nofail,_netdev
+        address = ${substr(NFSExportWork,0,(substr(NFSExportWork,7,1) == ":") ? 7 : (substr(NFSExportWork,8,1) == ":") ? 8 : (substr(NFSExportWork,9,1) == ":") ? 9 : (substr(NFSExportWork,10,1) == ":") ? 10 : (substr(NFSExportWork,11,1) == ":") ? 11 : (substr(NFSExportWork,12,1) == ":") ? 12 : (substr(NFSExportWork,13,1) == ":") ? 13 : 14 )}
+	    disabled = ${(adjoin_am)}
+
+
+    [[node master]]
+    ImageName = ${strcat(SIGurl,"/",(master_image_overide == true) ? MasterImageOverride : strcat(MasterImageName,"/versions/",ImageVersion))}
+    MachineType = $MasterMachineType
+    IsReturnProxy = $ReturnProxy
+    AdditionalClusterInitSpecs = $MasterClusterInitSpecs
+    ComputerName=${strcat(toLower(substr(ClusterName,0,4)),"-lc",substr(ClusterName,-1,1),"m")}
+    tags.CostAllocationCode = ${(static_wbs is false) ? costallocationcode : costallocationcode2}
+    tags.OmniaCentralUpdateManager = false
+    tags.UpdateSchedule = 6
+    AwaitInstallationTimeout = 15
+    SubnetId =  ${(toggle_MasterSubnetId is false) ? SubnetId : MasterSubnetId}
+        
+        [[[configuration]]]
+        cyclecloud.discoverable=true
+        cyclecloud.mounts.nfs_sched.disabled = true
+        cyclecloud.mounts.nfs_shared.disabled = true
+        # pbspro.cron_method = $AzpbsCronMethod # Default is "pbs_cron"
+        pbspro.queues.workq.ignore = "True" # We always replace these - was: ${Autoscale != true}
+        pbspro.queues.htcq.ignore  = "True" # We always replace these - was: ${Autoscale != true}
+        pbsqueue.q1.name = $QueueNameQ1
+        pbsqueue.q1.place = $QueueQ1Place
+        pbsqueue.q1.ungrouped = $QueueQ1ungrouped
+        pbsqueue.q2.name = $QueueNameQ2
+        pbsqueue.q2.place = $QueueQ2Place
+        pbsqueue.q2.ungrouped = $QueueQ2ungrouped
+        pbsqueue.q3.name = $QueueNameQ3
+        pbsqueue.q3.place = $QueueQ3Place
+        pbsqueue.q3.ungrouped = $QueueQ3ungrouped
+        pbsqueue.q4.name = $QueueNameQ4
+        pbsqueue.q4.place = $QueueQ4Place
+        pbsqueue.q4.ungrouped = $QueueQ4ungrouped
+        pbsqueue.q5.name = $QueueNameQ5
+        pbsqueue.q5.place = $QueueQ5Place
+        pbsqueue.q5.ungrouped = $QueueQ5ungrouped
+        pbsqueue.q6.name = $QueueNameQ6
+        pbsqueue.q6.place = $QueueQ6Place
+        pbsqueue.q6.ungrouped = $QueueQ6ungrouped
+        pbsqueue.q7.name = $QueueNameQ7
+        pbsqueue.q7.place = $QueueQ7Place
+        pbsqueue.q7.ungrouped = $QueueQ7ungrouped
+        pbsqueue.q8.name = $QueueNameQ8
+        pbsqueue.q8.place = $QueueQ8Place
+        pbsqueue.q8.ungrouped = $QueueQ8ungrouped
+        cyclecloud.pbs.timeout = $Idle_Timeout
+        cyclecloud.pbs.accesscontrol = $EnableAccessControl
+        cyclecloud.pbs.accessgroups = $QueueAccessGroup
+        cyclecloud.pbs.JobRetention = $JobHistoryRetention
+        cyclecloud.pbs.JobRetentionEnable = $EnableJobHistoryRetention
+
+       [[[cluster-init pbspro:master]]]
+            version = $PBSspec
+        
+        [[[network-interface eth0]]]
+        AssociatePublicIpAddress = $UsePublicNetwork
+        PrivateIp = $HeadNodeIPAddress 
+
+
+    #[[nodearray login]]
+    #InitialCount = $NumberLoginNodes
+    #MachineType = $serverMachineType
+    #    
+    #    [[[cluster-init cyclecloud/pbspro:login]]]
+    #    [[[cluster-init pbspro:login:2.0.19]]]
+    #    [[[configuration]]]
+    #    autoscale.enabled = false
+    #
+    #ComputerNamePrefix=${strcat(EquinorSub,"-lc",substr(ClusterName,-1,1),"top-")}
+
+    [[node top01]]
+    MachineType = $TopNodeMachineType
+    #ImageName = ${strcat(SIGurl,"/",TopNodeImageName)}
+    ImageName = ${strcat(SIGurl,"/",(topnode_image_overide == true) ? TopNodeImageOverride : strcat(TopNodeImageName,"/versions/",ImageVersion))}
+    AdditionalClusterInitSpecs = $TopNodeClusterInitSpecs
+    tags.CostAllocationCode = ${(static_wbs is false) ? costallocationcode : costallocationcode2}
+    tags.OmniaCentralUpdateManager = false
+    tags.UpdateSchedule = 4
+    ComputerName=${strcat(toLower(substr(ClusterName,0,4)),"-lc",substr(ClusterName,-1,1),"top01")}
+    
+    SubnetId =  ${(toggle_TopNodeSubnetId is false) ? SubnetId : TopNodeSubnetId}
+    
+        [[[configuration]]]
+        [[[cluster-init pbspro:login]]]
+        #[[[cluster-init pbspro:login:2.0.19]]]
+	    version = $PBSspec
+
+        Optional = True
+        [[[network-interface eth0]]]
+        AssociatePublicIpAddress = $ExecuteNodesPublic
+
+    [[node top02]]
+    MachineType = $TopNodeMachineType
+    #ImageName = ${strcat(SIGurl,"/",TopNodeImageName)}
+    #ImageName = ${strcat(SIGurl,"/",(topnode_image_overide == true) ? TopNodeImageOverride : TopNodeImageName)}
+    ImageName = ${strcat(SIGurl,"/",(topnode_image_overide == true) ? TopNodeImageOverride : strcat(TopNodeImageName,"/versions/",ImageVersion))}
+    AdditionalClusterInitSpecs = $TopNodeClusterInitSpecs
+    ComputerName=${strcat(toLower(substr(ClusterName,0,4)),"-lc",substr(ClusterName,-1,1),"top02")}
+    tags.CostAllocationCode = ${(static_wbs is false) ? costallocationcode : costallocationcode2}
+    tags.OmniaCentralUpdateManager = false
+    tags.UpdateSchedule = 4
+    
+     SubnetId =  ${(toggle_TopNodeSubnetId is false) ? SubnetId : TopNodeSubnetId}
+    
+        [[[configuration]]]
+        [[[cluster-init pbspro:login]]]
+	    version = $PBSspec 
+        Optional = True
+        [[[network-interface eth0]]]
+        AssociatePublicIpAddress = $ExecuteNodesPublic
+
+    [[nodearray q1]]
+    MachineType = $MachineTypeQ1
+    MaxCoreCount = $MaxQ1
+    InitialCount = $StartQ1
+    #ImageName = ${(q1_image_override == true ) ? strcat(SIGurl,"/",Q1ImageOverride) : ((isError(HW[MachineTypeQ1]) == true ) ? strcat(SIGurl,"/",DefaultImageName,"/versions/",ImageVersion) : (HW[MachineTypeQ1] == "D32") ? strcat(SIGurl,"/",D32ImageName,"/versions/",ImageVersion) : (HW[MachineTypeQ1] == "HC44" ) ? strcat(SIGurl,"/",HC44ImageName,"/versions/",ImageVersion) : (HW[MachineTypeQ1] == "HB120" ) ? strcat(SIGurl,"/",HB120ImageName,"/versions/",ImageVersion) :  (HW[MachineTypeQ1] == "NC24v3") ? strcat(SIGurl,"/",NC24v3ImageName,"/versions/",ImageVersion) : (HW[MachineTypeQ1] == "NC24v2") ? strcat(SIGurl,"/",NC24v2ImageName,"/versions/",ImageVersion) : "") }
+    TestName = ${((regexp("_HB",MachineTypeQ1) == true )  ?  strcat(SIGurl,"/",D32ImageName,"/versions/",ImageVersion) : strcat(SIGurl,"/",DefaultImageName,"/versions/",ImageVersion))}
+    Q1isHB = ${(regexp("_HB",MachineTypeQ1) == true )?1:0}
+    Q1isD = ${(regexp("_D",MachineTypeQ1) == true )?1:0}
+    Q1isHC = ${(regexp("_HC",MachineTypeQ1) == true )?1:0}
+    Q1isNC = ${(regexp("_NC",MachineTypeQ1) == true )?1:0}
+    ImageName = ${  (q1_image_override == true ) ? strcat(SIGurl,"/",Q1ImageOverride) : (regexp("_H[BC]",MachineTypeQ1) == true  ) ? strcat(SIGurl,"/",HB120ImageName,"/versions/",ImageVersion) :  (regexp("_D",MachineTypeQ1) == true ) ? strcat(SIGurl,"/",D32ImageName,"/versions/",ImageVersion) : (regexp("_NC",MachineTypeQ1) == true ) ? strcat(SIGurl,"/",NC24v3ImageName,"/versions/",ImageVersion) : strcat(SIGurl,"/",DefaultImageName,"/versions/",ImageVersion)  }
+    ImageNameTest = ${  (q1_image_override == true ) ? strcat(SIGurl,"/",Q1ImageOverride) : (regexp("_H[BC]",MachineTypeQ1) == true  ) ? strcat(SIGurl,"/",HB120ImageName,"/versions/",ImageVersion) :  (regexp("_D",MachineTypeQ1) == true ) ? strcat(SIGurl,"/",D32ImageName,"/versions/",ImageVersion) : (regexp("_NC",MachineTypeQ1) == true ) ? strcat(SIGurl,"/",NC24v3ImageName,"/versions/",ImageVersion) : strcat(SIGurl,"/",DefaultImageName,"/versions/",ImageVersion)  }
+    #Q1ImageName = ${  (regexp("_HB",MachineTypeQ1) == true  ) ? strcat(SIGurl,"/",HB120ImageName,"/versions/",ImageVersion) :  strcat(SIGurl,"/",D32ImageName,"/versions/",ImageVersion)  }
+    Interruptible = $UseLowPrio1
+    AdditionalClusterInitSpecs = $ExecuteClusterInitSpecs
+    tags.CostAllocationCode = ${(wbsQ1 is false) ? costallocationcode : costallocationcodeQ1}
+    ComputerNamePrefix=${strcat(toLower(substr(ClusterName,0,4)),"-lc",substr(ClusterName,-1,1),"01-")}
+    Azure.SingleScaleset = false
+    Azure.MaxScaleSetSize = 150
+        [[[configuration]]]
+            pbspro.slot_type = $QueueNameQ1
+            pbspro.resource.ungrouped = $QueueQ1ungrouped
+            KeepCount = ${(StartQ1 > 0 ) ? 1 : 0 }
+        [[[cluster-init pbspro:execute]]]
+            version = $PBSspec
+            Optional = True
+        [[[network-interface eth0]]]
+            AssociatePublicIpAddress = $ExecuteNodesPublic
+
+    [[nodearray q2]]
+    MachineType = $MachineTypeQ2
+    MaxCoreCount = $MaxQ2
+    #ImageName = ${(q2_image_override == true ) ? strcat(SIGurl,"/",Q2ImageOverride) : ((isError(HW[MachineTypeQ2]) == true ) ? strcat(SIGurl,"/",DefaultImageName,"/versions/",ImageVersion) : (HW[MachineTypeQ2] == "D32") ? strcat(SIGurl,"/",D32ImageName,"/versions/",ImageVersion) : (HW[MachineTypeQ2] == "HC44" ) ? strcat(SIGurl,"/",HC44ImageName,"/versions/",ImageVersion) : (HW[MachineTypeQ2] == "HB120" ) ? strcat(SIGurl,"/",HB120ImageName,"/versions/",ImageVersion) :  (HW[MachineTypeQ2] == "NC24v3") ? strcat(SIGurl,"/",NC24v3ImageName,"/versions/",ImageVersion) : (HW[MachineTypeQ2] == "NC24v2") ? strcat(SIGurl,"/",NC24v2ImageName,"/versions/",ImageVersion) : "") }
+    ImageName = ${  (q2_image_override == true ) ? strcat(SIGurl,"/",Q2ImageOverride) : (regexp("_H[BC]",MachineTypeQ2) == true  ) ? strcat(SIGurl,"/",HB120ImageName,"/versions/",ImageVersion) :  (regexp("_D",MachineTypeQ2) == true ) ? strcat(SIGurl,"/",D32ImageName,"/versions/",ImageVersion) : (regexp("_NC",MachineTypeQ2) == true ) ? strcat(SIGurl,"/",NC24v3ImageName,"/versions/",ImageVersion) : strcat(SIGurl,"/",DefaultImageName,"/versions/",ImageVersion)  }
+    Interruptible = $UseLowPrio2
+    AdditionalClusterInitSpecs = $ExecuteClusterInitSpecs
+    tags.CostAllocationCode = ${(wbsQ2 is false) ? costallocationcode : costallocationcodeQ2}
+    ComputerNamePrefix=${strcat(toLower(substr(ClusterName,0,4)),"-lc",substr(ClusterName,-1,1),"02-")}
+    Azure.SingleScaleset = false
+    Azure.MaxScaleSetSize = 150
+        [[[configuration]]]
+            pbspro.slot_type = $QueueNameQ2
+        [[[cluster-init pbspro:execute]]]
+            version = $PBSspec
+            Optional = True
+        [[[network-interface eth0]]]
+            AssociatePublicIpAddress = $ExecuteNodesPublic
+
+    [[nodearray q3]]
+    MachineType = $MachineTypeQ3
+    MaxCoreCount = $MaxQ3
+    #ImageName = ${(q3_image_override == true ) ? strcat(SIGurl,"/",Q3ImageOverride) : ((isError(HW[MachineTypeQ3]) == true ) ? strcat(SIGurl,"/",DefaultImageName,"/versions/",ImageVersion) : (HW[MachineTypeQ3] == "D32") ? strcat(SIGurl,"/",D32ImageName,"/versions/",ImageVersion) : (HW[MachineTypeQ3] == "HC44" ) ? strcat(SIGurl,"/",HC44ImageName,"/versions/",ImageVersion) : (HW[MachineTypeQ3] == "HB120" ) ? strcat(SIGurl,"/",HB120ImageName,"/versions/",ImageVersion) :  (HW[MachineTypeQ3] == "NC24v3") ? strcat(SIGurl,"/",NC24v3ImageName,"/versions/",ImageVersion) : (HW[MachineTypeQ3] == "NC24v2") ? strcat(SIGurl,"/",NC24v2ImageName,"/versions/",ImageVersion) : "") }
+    ImageName = ${  (q3_image_override == true ) ? strcat(SIGurl,"/",Q3ImageOverride) : (regexp("_H[BC]",MachineTypeQ3) == true  ) ? strcat(SIGurl,"/",HB120ImageName,"/versions/",ImageVersion) :  (regexp("_D",MachineTypeQ3) == true ) ? strcat(SIGurl,"/",D32ImageName,"/versions/",ImageVersion) : (regexp("_NC",MachineTypeQ3) == true ) ? strcat(SIGurl,"/",NC24v3ImageName,"/versions/",ImageVersion) : strcat(SIGurl,"/",DefaultImageName,"/versions/",ImageVersion)  }
+    Interruptible = $UseLowPrio3
+    AdditionalClusterInitSpecs = $ExecuteClusterInitSpecs
+    tags.CostAllocationCode = ${(wbsQ3 is false) ? costallocationcode : costallocationcodeQ3}
+    ComputerNamePrefix=${strcat(toLower(substr(ClusterName,0,4)),"-lc",substr(ClusterName,-1,1),"03-")}
+    Azure.SingleScaleset = false
+    Azure.MaxScaleSetSize = 150
+        [[[configuration]]]
+            pbspro.slot_type = $QueueNameQ3
+        [[[cluster-init pbspro:execute]]]
+    	    version = $PBSspec
+            Optional = True
+        [[[network-interface eth0]]]
+            AssociatePublicIpAddress = $ExecuteNodesPublic
+
+    [[nodearray q4]]
+    MachineType = $MachineTypeQ4
+    MaxCoreCount = $MaxQ4
+    #ImageName = ${(q4_image_override == true ) ? strcat(SIGurl,"/",Q4ImageOverride) : ((isError(HW[MachineTypeQ4]) == true ) ? strcat(SIGurl,"/",DefaultImageName,"/versions/",ImageVersion) : (HW[MachineTypeQ4] == "D32") ? strcat(SIGurl,"/",D32ImageName,"/versions/",ImageVersion) : (HW[MachineTypeQ4] == "HC44" ) ? strcat(SIGurl,"/",HC44ImageName,"/versions/",ImageVersion) : (HW[MachineTypeQ4] == "HB120" ) ? strcat(SIGurl,"/",HB120ImageName,"/versions/",ImageVersion) :  (HW[MachineTypeQ4] == "NC24v3") ? strcat(SIGurl,"/",NC24v3ImageName,"/versions/",ImageVersion) : (HW[MachineTypeQ4] == "NC24v2") ? strcat(SIGurl,"/",NC24v2ImageName,"/versions/",ImageVersion) : "") }
+    ImageName = ${  (q4_image_override == true ) ? strcat(SIGurl,"/",Q4ImageOverride) : (regexp("_H[BC]",MachineTypeQ4) == true  ) ? strcat(SIGurl,"/",HB120ImageName,"/versions/",ImageVersion) :  (regexp("_D",MachineTypeQ4) == true ) ? strcat(SIGurl,"/",D32ImageName,"/versions/",ImageVersion) : (regexp("_NC",MachineTypeQ4) == true ) ? strcat(SIGurl,"/",NC24v3ImageName,"/versions/",ImageVersion) : strcat(SIGurl,"/",DefaultImageName,"/versions/",ImageVersion)  }
+    Interruptible = $UseLowPrio4
+    AdditionalClusterInitSpecs = $ExecuteClusterInitSpecs
+    tags.CostAllocationCode = ${(wbsQ4 is false) ? costallocationcode : costallocationcodeQ4}
+    ComputerNamePrefix=${strcat(toLower(substr(ClusterName,0,4)),"-lc",substr(ClusterName,-1,1),"04-")}
+    Azure.SingleScaleset = false
+    Azure.MaxScaleSetSize = 150
+        [[[configuration]]]
+            pbspro.slot_type = $QueueNameQ4
+        [[[cluster-init pbspro:execute]]]
+    	    version = $PBSspec
+            Optional = True
+        [[[network-interface eth0]]]
+            AssociatePublicIpAddress = $ExecuteNodesPublic
+
+    [[nodearray q5]]
+    MachineType = $MachineTypeQ5
+    MaxCoreCount = $MaxQ5
+    #ImageName = ${(q5_image_override == true ) ? strcat(SIGurl,"/",Q5ImageOverride) : ((isError(HW[MachineTypeQ5]) == true ) ? strcat(SIGurl,"/",DefaultImageName,"/versions/",ImageVersion) : (HW[MachineTypeQ5] == "D32") ? strcat(SIGurl,"/",D32ImageName,"/versions/",ImageVersion) : (HW[MachineTypeQ5] == "HC44" ) ? strcat(SIGurl,"/",HC44ImageName,"/versions/",ImageVersion) : (HW[MachineTypeQ5] == "HB120" ) ? strcat(SIGurl,"/",HB120ImageName,"/versions/",ImageVersion) :  (HW[MachineTypeQ5] == "NC24v3") ? strcat(SIGurl,"/",NC24v3ImageName,"/versions/",ImageVersion) : (HW[MachineTypeQ5] == "NC24v2") ? strcat(SIGurl,"/",NC24v2ImageName,"/versions/",ImageVersion) : "") }
+    ImageName = ${  (q5_image_override == true ) ? strcat(SIGurl,"/",Q5ImageOverride) : (regexp("_H[BC]",MachineTypeQ5) == true  ) ? strcat(SIGurl,"/",HB120ImageName,"/versions/",ImageVersion) :  (regexp("_D",MachineTypeQ5) == true ) ? strcat(SIGurl,"/",D32ImageName,"/versions/",ImageVersion) : (regexp("_NC",MachineTypeQ5) == true ) ? strcat(SIGurl,"/",NC24v3ImageName,"/versions/",ImageVersion) : strcat(SIGurl,"/",DefaultImageName,"/versions/",ImageVersion)  }
+    Interruptible = $UseLowPrio5
+    AdditionalClusterInitSpecs = $ExecuteClusterInitSpecs
+    tags.CostAllocationCode = ${(wbsQ5 is false) ? costallocationcode : costallocationcodeQ5}
+    ComputerNamePrefix=${strcat(toLower(substr(ClusterName,0,4)),"-lc",substr(ClusterName,-1,1),"05-")}
+    Azure.SingleScaleset = false
+    Azure.MaxScaleSetSize = 150
+        [[[configuration]]]
+            pbspro.slot_type = $QueueNameQ5
+        [[[cluster-init pbspro:execute]]]
+    	    version = $PBSspec
+            Optional = True
+        [[[network-interface eth0]]]
+            AssociatePublicIpAddress = $ExecuteNodesPublic
+
+    [[nodearray q6]]
+    MachineType = $MachineTypeQ6
+    MaxCoreCount = $MaxQ6
+    #ImageName = ${(q6_image_override == true ) ? strcat(SIGurl,"/",Q6ImageOverride) : ((isError(HW[MachineTypeQ6]) == true ) ? strcat(SIGurl,"/",DefaultImageName,"/versions/",ImageVersion) : (HW[MachineTypeQ6] == "D32") ? strcat(SIGurl,"/",D32ImageName,"/versions/",ImageVersion) : (HW[MachineTypeQ6] == "HC44" ) ? strcat(SIGurl,"/",HC44ImageName,"/versions/",ImageVersion) : (HW[MachineTypeQ6] == "HB120" ) ? strcat(SIGurl,"/",HB120ImageName,"/versions/",ImageVersion) :  (HW[MachineTypeQ6] == "NC24v3") ? strcat(SIGurl,"/",NC24v3ImageName,"/versions/",ImageVersion) : (HW[MachineTypeQ6] == "NC24v2") ? strcat(SIGurl,"/",NC24v2ImageName,"/versions/",ImageVersion) : "") }
+    ImageName = ${  (q6_image_override == true ) ? strcat(SIGurl,"/",Q6ImageOverride) : (regexp("_H[BC]",MachineTypeQ6) == true  ) ? strcat(SIGurl,"/",HB120ImageName,"/versions/",ImageVersion) :  (regexp("_D",MachineTypeQ6) == true ) ? strcat(SIGurl,"/",D32ImageName,"/versions/",ImageVersion) : (regexp("_NC",MachineTypeQ6) == true ) ? strcat(SIGurl,"/",NC24v3ImageName,"/versions/",ImageVersion) : strcat(SIGurl,"/",DefaultImageName,"/versions/",ImageVersion)  }
+    Interruptible = $UseLowPrio6
+    AdditionalClusterInitSpecs = $ExecuteClusterInitSpecs
+    tags.CostAllocationCode = ${(wbsQ6 is false) ? costallocationcode : costallocationcodeQ6}
+    ComputerNamePrefix=${strcat(toLower(substr(ClusterName,0,4)),"-lc",substr(ClusterName,-1,1),"06-")}
+    Azure.SingleScaleset = false
+    Azure.MaxScaleSetSize = 150
+        [[[configuration]]]
+            pbspro.slot_type = $QueueNameQ6
+        [[[cluster-init pbspro:execute]]]
+    	    version = $PBSspec
+            Optional = True
+        [[[network-interface eth0]]]
+            AssociatePublicIpAddress = $ExecuteNodesPublic
+
+    [[nodearray q7]]
+    MachineType = $MachineTypeQ7
+    MaxCoreCount = $MaxQ7
+    #ImageName = ${(q7_image_override == true ) ? strcat(SIGurl,"/",Q7ImageOverride) : ((isError(HW[MachineTypeQ7]) == true ) ? strcat(SIGurl,"/",DefaultImageName,"/versions/",ImageVersion) : (HW[MachineTypeQ7] == "D32") ? strcat(SIGurl,"/",D32ImageName,"/versions/",ImageVersion) : (HW[MachineTypeQ7] == "HC44" ) ? strcat(SIGurl,"/",HC44ImageName,"/versions/",ImageVersion) : (HW[MachineTypeQ7] == "HB120" ) ? strcat(SIGurl,"/",HB120ImageName,"/versions/",ImageVersion) :  (HW[MachineTypeQ7] == "NC24v3") ? strcat(SIGurl,"/",NC24v3ImageName,"/versions/",ImageVersion) : (HW[MachineTypeQ7] == "NC24v2") ? strcat(SIGurl,"/",NC24v2ImageName,"/versions/",ImageVersion) : "") }
+    ImageName = ${  (q7_image_override == true ) ? strcat(SIGurl,"/",Q7ImageOverride) : (regexp("_H[BC]",MachineTypeQ7) == true  ) ? strcat(SIGurl,"/",HB120ImageName,"/versions/",ImageVersion) :  (regexp("_D",MachineTypeQ7) == true ) ? strcat(SIGurl,"/",D32ImageName,"/versions/",ImageVersion) : (regexp("_NC",MachineTypeQ7) == true ) ? strcat(SIGurl,"/",NC24v3ImageName,"/versions/",ImageVersion) : strcat(SIGurl,"/",DefaultImageName,"/versions/",ImageVersion)  }
+    Interruptible = $UseLowPrio7
+    AdditionalClusterInitSpecs = $ExecuteClusterInitSpecs
+    tags.CostAllocationCode = ${(wbsQ7 is false) ? costallocationcode : costallocationcodeQ7}
+    ComputerNamePrefix=${strcat(toLower(substr(ClusterName,0,4)),"-lc",substr(ClusterName,-1,1),"07-")}
+    Azure.SingleScaleset = false
+    Azure.MaxScaleSetSize = 150
+        [[[configuration]]]
+            pbspro.slot_type = $QueueNameQ7
+        [[[cluster-init pbspro:execute]]]
+	    version = $PBSspec
+        #[[[cluster-init pbspro:execute:2.0.19]]]
+            Optional = True
+        [[[network-interface eth0]]]
+            AssociatePublicIpAddress = $ExecuteNodesPublic
+
+    [[nodearray q8]]
+    MachineType = $MachineTypeQ8
+    MaxCoreCount = $MaxQ8
+    #ImageName = ${(q8_image_override == true ) ? strcat(SIGurl,"/",Q8ImageOverride) : ((isError(HW[MachineTypeQ8]) == true ) ? strcat(SIGurl,"/",DefaultImageName,"/versions/",ImageVersion) : (HW[MachineTypeQ8] == "D32") ? strcat(SIGurl,"/",D32ImageName,"/versions/",ImageVersion) : (HW[MachineTypeQ8] == "HC44" ) ? strcat(SIGurl,"/",HC44ImageName,"/versions/",ImageVersion) : (HW[MachineTypeQ8] == "HB120" ) ? strcat(SIGurl,"/",HB120ImageName,"/versions/",ImageVersion) :  (HW[MachineTypeQ8] == "NC24v3") ? strcat(SIGurl,"/",NC24v3ImageName,"/versions/",ImageVersion) : (HW[MachineTypeQ8] == "NC24v2") ? strcat(SIGurl,"/",NC24v2ImageName,"/versions/",ImageVersion) : "") }
+    ImageName = ${  (q8_image_override == true ) ? strcat(SIGurl,"/",Q8ImageOverride) : (regexp("_H[BC]",MachineTypeQ8) == true  ) ? strcat(SIGurl,"/",HB120ImageName,"/versions/",ImageVersion) :  (regexp("_D",MachineTypeQ8) == true ) ? strcat(SIGurl,"/",D32ImageName,"/versions/",ImageVersion) : (regexp("_NC",MachineTypeQ8) == true ) ? strcat(SIGurl,"/",NC24v3ImageName,"/versions/",ImageVersion) : strcat(SIGurl,"/",DefaultImageName,"/versions/",ImageVersion)  }
+    Interruptible = $UseLowPrio8
+    AdditionalClusterInitSpecs = $ExecuteClusterInitSpecs
+    tags.CostAllocationCode = ${(wbsQ8 is false) ? costallocationcode : costallocationcodeQ8}
+    ComputerNamePrefix=${strcat(toLower(substr(ClusterName,0,4)),"-lc",substr(ClusterName,-1,1),"08-")}
+    Azure.SingleScaleset = false
+    Azure.MaxScaleSetSize = 150
+        [[[configuration]]]
+            pbspro.slot_type = $QueueNameQ8
+        [[[cluster-init pbspro:execute]]]
+    	    version = $PBSspec
+            Optional = True
+        [[[network-interface eth0]]]
+            AssociatePublicIpAddress = $ExecuteNodesPublic
+
+    [[nodearray q9]]
+    MachineType = $MachineTypeQ9
+    MaxCoreCount = $MaxQ9
+    #ImageName = ${(q9_image_override == true ) ? strcat(SIGurl,"/",Q9ImageOverride) : ((isError(HW[MachineTypeQ9]) == true ) ? strcat(SIGurl,"/",DefaultImageName,"/versions/",ImageVersion) : (HW[MachineTypeQ9] == "D32") ? strcat(SIGurl,"/",D32ImageName,"/versions/",ImageVersion) : (HW[MachineTypeQ9] == "HC44" ) ? strcat(SIGurl,"/",HC44ImageName,"/versions/",ImageVersion) : (HW[MachineTypeQ9] == "HB120" ) ? strcat(SIGurl,"/",HB120ImageName,"/versions/",ImageVersion) :  (HW[MachineTypeQ9] == "NC24v3") ? strcat(SIGurl,"/",NC24v3ImageName,"/versions/",ImageVersion) : (HW[MachineTypeQ9] == "NC24v2") ? strcat(SIGurl,"/",NC24v2ImageName,"/versions/",ImageVersion) : "") }
+    ImageName = ${  (q9_image_override == true ) ? strcat(SIGurl,"/",Q9ImageOverride) : (regexp("_H[BC]",MachineTypeQ9) == true  ) ? strcat(SIGurl,"/",HB120ImageName,"/versions/",ImageVersion) :  (regexp("_D",MachineTypeQ9) == true ) ? strcat(SIGurl,"/",D32ImageName,"/versions/",ImageVersion) : (regexp("_NC",MachineTypeQ9) == true ) ? strcat(SIGurl,"/",NC24v3ImageName,"/versions/",ImageVersion) : strcat(SIGurl,"/",DefaultImageName,"/versions/",ImageVersion)  }
+    Interruptible = $UseLowPrio9
+    AdditionalClusterInitSpecs = $ExecuteClusterInitSpecs
+    tags.CostAllocationCode = ${(wbsQ9 is false) ? costallocationcode : costallocationcodeQ9}
+    ComputerNamePrefix=${strcat(toLower(substr(ClusterName,0,4)),"-lc",substr(ClusterName,-1,1),"09-")}
+    Azure.SingleScaleset = false
+    Azure.MaxScaleSetSize = 150
+        [[[configuration]]]
+            # The extra / migration slot
+        [[[cluster-init pbspro:execute]]]
+    	    version = $PBSspec
+            Optional = True
+        [[[network-interface eth0]]]
+            AssociatePublicIpAddress = $ExecuteNodesPublic
+
+[parameters About]
+Order = 10
+    [[parameters About OpenPBS]]
+
+        [[[parameter pbspro]]]
+        HideLabel = true
+        Config.Plugin = pico.widget.HtmlTemplateWidget
+        Config.Template := "<table role=\"presentation\"><tr><td><p>OpenPBS is a highly configurable open source workload manager. See the <a href=\"http://www.openpbs.org/\" target=\"_blank\">OpenPBS project site</a> for an overview.</p></td></tr></table>"
+
+[parameters Required Settings]
+Order = 20
+    [[parameters VM Timeouts]]
+
+    [[[parameter InstallTimeout]]]
+      Label = Install Timeout
+      Description = Max mins to complete installation of vm
+      DefaultValue = 20
+      Config.Plugin = pico.form.NumberTextBox
+      Config.MinValue = 10
+      Config.IntegerOnly = true
+
+    [[parameters Identity]]
+
+    [[[parameter ManagedServiceIdentity]]]
+      ParameterType = Azure.ManagedIdentity
+      Label = MSI Identity
+      Description = The resource ID of the Managed Service Identity to apply to the nodes
+
+    [[parameters Placements]]
+    Order = 24
+
+        [[[parameter Region]]]
+        Label = Region
+        Description = Deployment Location
+        ParameterType = Cloud.Region
+        DefaultValue = westeurope
+
+
+    [[parameters Networking]]
+    Order = 26
+
+        [[[parameter SubnetId]]]
+        Label = Default Subnet ID
+        Description = Default Subnet Resource Path (ResourceGroup/VirtualNetwork/Subnet)
+        ParameterType = Azure.Subnet
+        Required = True
+
+        [[[parameter toggle_MasterSubnetId]]]
+        Label = Toggle Master subnet 
+        DefaultValue = False
+        ParameterType = Boolean
+
+        [[[parameter AcceleratedNetwork]]]
+        Label =  Accelerated Network 
+        DefaultValue = True
+        ParameterType = Boolean
+
+        [[[parameter MasterSubnetId]]]
+        Label = Master Subnet ID
+        Description = Master Subnet Resource Path (ResourceGroup/VirtualNetwork/Subnet)
+        ParameterType = Azure.Subnet
+        Conditions.Excluded := toggle_MasterSubnetId isnt true
+        
+        [[[parameter toggle_TopNodeSubnetId]]]
+        Label = Toggle TopNode subnet 
+        DefaultValue = False
+        ParameterType = Boolean
+        
+        [[[parameter TopNodeSubnetId]]]
+        Label = TopNode Subnet ID
+        Description = TopNode Subnet Resource Path (ResourceGroup/VirtualNetwork/Subnet)
+        ParameterType = Azure.Subnet
+        Conditions.Excluded := toggle_TopNodeSubnetId isnt true
+
+        [[[parameter UseZones]]]
+        Label = Use Availbility Zones
+        DefaultValue = False
+        ParameterType = Boolean
+
+
+        [[[parameter NodeZone]]]
+        Label = Availability Zone
+        Config.Plugin = pico.form.Dropdown
+        Conditions.Excluded := UseZones isnt true
+
+            [[[[list Config.Entries]]]]
+            Name = 1
+            Label = Zone 1
+            [[[[list Config.Entries]]]]
+            Name = 2
+            Label = Zone 2
+            [[[[list Config.Entries]]]]
+            Name = 3
+            Label = Zone 3
+
+
+
+
+[parameters VM Settings]
+Order = 30
+
+    [[parameters Virtual Machines ]]
+    Description = "The cluster, in this case, has two roles: the scheduler server-node with shared filer and the execute hosts. Configure which VM types to use based on the requirements of your application."
+
+
+    [[parameters Virtual Machines ]]
+    Order = 31
+    Description = "The cluster, in this case, has two roles: the scheduler server-node with shared filer and the execute hosts. Configure which VM types to use based on the requirements of your application."
+
+        [[[parameter MasterMachineType]]]
+        Label = Master VM Type
+        Description = The VM type for scheduler master
+        ParameterType = Cloud.MachineType
+        DefaultValue = Standard_D16ds_v4
+
+        [[[parameter TopNodeMachineType]]]
+        Label = Topnode VM Type
+        Description = The VM type for top/login nodes
+        ParameterType = Cloud.MachineType
+        #DefaultValue = Standard_NV12s_v3 
+        DefaultValue = Standard_D16ds_v4
+
+    [[parameters Auto-Scaling]]
+    Description = "The cluster can autoscale to the workload, adding execute hosts as jobs are queued. To enable this check the box below and choose the initial and maximum core counts for the cluster"
+
+        [[[parameter Autoscale]]]
+        Label = Autoscale
+        DefaultValue = true
+        Widget.Plugin = pico.form.BooleanCheckBox
+        Widget.Label = Start and stop execute instances automatically
+
+    [[[parameter Idle_Timeout]]]
+        Label = Idle Timeout Seconds
+        Description = Number of seconds before idle Compute terminate
+        DefaultValue = 300
+        Config.Plugin = pico.form.NumberTextBox
+        Config.MinValue = 120
+        Config.IntegerOnly = true
+
+[parameters Software]
+Order=40
+
+    [[parameters Scheduler]]
+
+        [[[parameter PBSVersion]]]
+        Label = PBS Version
+        Config.Plugin = pico.form.Dropdown
+        Config.Entries := {[Label="OpenPBS v23, EL 7+8"; Value="23.06.06-0"], [Label="OpenPBS v22, EL 7+8"; Value="22.05.11-0"], [Label="OpenPBS v20, EL 7+8"; Value="20.0.1-0"]}
+        DefaultValue = 23.06.06-0
+
+        [[[parameter PBSspec]]]
+        Label = PBS Spec Script Version
+        Config.Plugin = pico.form.Dropdown
+        Config.Entries := {[Label="OpenPBS spec 2.0.25"; Value="2.0.25"], [Label="OpenPBS spec 2.0.23"; Value="2.0.23"], [Label="OpenPBS spec 2.0.19"; Value="2.0.19"]}
+        DefaultValue = 2.0.25
+
+    [[parameters Cluster Init Host Config]]
+        [[[parameter showhostconfigdir]]]
+        Label = Show Host config directories
+        DefaultValue = false
+        ParameterType = Boolean
+
+        [[[parameter HostConfigDirectories ]]]
+        Label = Host Config Directories
+        Description = Set Host config directories
+        Config.Plugin = pico.form.StringTextBox
+        #DefaultValue = "TOBESPECIFIED"
+        Config.NumLines = 1
+        Conditions.Excluded := showhostconfigdir is false
+
+    [[parameters OS Selections]]
+    Description = "Specify the scheduling software, and base OS installed on all nodes, and optionally the cluster-init and chef versions from your Locker."
+
+        [[[parameter SIGurl]]]
+        Label = SIG url
+        Config.OS = linux
+        Description = SIG url
+        Required = True
+        Config.Plugin = pico.form.QueryDropdown
+        Config.Query = select SigId as Name from Equinor.CustomImages where  sigid isnt undefined  
+
+        [[[parameter ImageVersion]]]
+        Label = Image Version 
+        Description = Default Image Version
+        Required = True
+        Config.Plugin = pico.form.QueryDropdown
+        Config.Query = select Version as Name from Equinor.CustomImages where  version isnt undefined order by Name 
+
+        [[[parameter DefaultImageName]]]
+        Label = Default OS
+        Config.OS = linux
+        Description = Default Image
+        Required = True
+        Config.Plugin = pico.form.QueryDropdown
+        Config.Query = select name from Equinor.CustomImages where   name isnt undefined &&  version isnt undefined order by Name
+        
+        [[[parameter master_image_overide]]]
+        Label = Overide Master Image List
+        DefaultValue = false
+        ParameterType = Boolean
+
+
+        [[[parameter MasterImageName]]]
+        Label = Master OS
+        Config.OS = linux
+        Description = Master Image
+        Required = True
+        Config.Plugin = pico.form.QueryDropdown
+        Config.Query = select name from Equinor.CustomImages where ( Image_Function == "compute"  || Image_Function == "adm"  || Image_Function == "gen" ) &&  name isnt undefined &&  version isnt undefined order by Name
+	    Conditions.Excluded := master_image_overide is true
+
+        [[[parameter MasterImageOverride]]]
+        Label = Free Text Master Image Name
+        Description = Free text format image_def_name/versions/version_number
+        #DefaultValue = /scratchnfs
+        Conditions.Excluded := master_image_overide is false
+
+        [[[parameter topnode_image_overide]]]
+        Label = Overide Topnode image List
+        DefaultValue = false
+        ParameterType = Boolean
+
+        [[[parameter TopNodeImageName]]]
+        Label = TopNode OS
+        Config.OS = linux
+        Description = TopNode Image
+        Required = True
+        Config.Plugin = pico.form.QueryDropdown
+        Config.Query = select name from Equinor.CustomImages where ( Image_Function == "x2go"   || Image_Function == "top" || Image_Function == "gen" ) &&  name isnt undefined  &&  version isnt undefined order by Name
+	    Conditions.Excluded := topnode_image_overide is true
+
+        [[[parameter TopNodeImageOverride]]]
+        Label = Free Text TopNode Image Name
+        Description = Free text format image_def_name/versions/version_number
+        #DefaultValue = /scratchnfs
+        Conditions.Excluded := topnode_image_overide is false
+
+        [[[parameter hide_old_images]]]
+        Label = Hide extinct options
+        DefaultValue = True
+        ParameterType = Boolean
+
+        [[[parameter D32ImageName]]]
+        Label = D image
+        Config.OS = linux
+        Description = D32 execute image
+        Config.Plugin = pico.form.QueryDropdown
+        Config.Query = select name from Equinor.CustomImages where (image_function == "compute" || Image_Function == "gen" ) &&  name isnt undefined  &&  version isnt undefined order by Name
+
+        [[[parameter HC44ImageName]]]
+        Label = HC44 execute image
+        Config.OS = linux
+        Description = HC44 execute image
+        Config.Plugin = pico.form.QueryDropdown
+        Config.Query = select name from Equinor.CustomImages where (image_function == "compute" || image_function == "ib" || Image_Function == "gen" ) &&  name isnt undefined  &&  version isnt undefined order by Name
+        Conditions.Excluded := hide_old_images is true
+
+        [[[parameter HB120ImageName]]]
+        Label = HB or HC image
+        Config.OS = linux
+        Description = HB or HC execute image
+        Config.Plugin = pico.form.QueryDropdown
+        Config.Query = select name from Equinor.CustomImages where   (image_function == "compute" || image_function == "ib" || Image_Function == "gen" ) &&  name isnt undefined  &&  version isnt undefined order by Name
+
+        [[[parameter NC24v2ImageName]]]
+        Label = NC24v2 execute image
+        Config.OS = linux
+        Description = NC24v2 execute image
+        Config.Plugin = pico.form.QueryDropdown
+        Config.Query = select name from Equinor.CustomImages where  (image_function == "compute" || image_function == "ib" || Image_Function == "gen" || Image_Function == "gpu" ) &&  name isnt undefined  &&  version isnt undefined order by Name
+        Conditions.Excluded := hide_old_images is true
+
+        [[[parameter NC24v3ImageName]]]
+        Label = NC image
+        Config.OS = linux
+        Description = NC24v3 execute image
+        Config.Plugin = pico.form.QueryDropdown
+        Config.Query = select name from Equinor.CustomImages where (image_function == "compute" || image_function == "ib" || Image_Function == "gen" || Image_Function == "gpu") &&  name isnt undefined  &&  version isnt undefined order by Name
+
+    [[parameters Cluster Init]]
+
+        [[[parameter serverClusterInitSpecs]]]
+        Label = Server Cluster-Init
+        DefaultValue = =undefined
+        Description = Cluster init specs to apply to the server node
+        ParameterType = Cloud.ClusterInitSpecs
+    
+        [[[parameter MasterClusterInitSpecs]]]
+        Label = Master Cluster-Init
+        DefaultValue = =undefined
+        Description = Cluster init specs to apply to the master node
+        ParameterType = Cloud.ClusterInitSpecs
+    
+        [[[parameter TopNodeClusterInitSpecs]]]
+        Label = Top Nodes Cluster-Init
+        DefaultValue = =undefined
+        Description = Cluster init specs to apply to the master node
+        ParameterType = Cloud.ClusterInitSpecs
+    
+        [[[parameter ExecuteClusterInitSpecs]]]
+        Label = Execute Cluster-Init
+        DefaultValue = =undefined
+        Description = Cluster init specs to apply to execute nodes
+        ParameterType = Cloud.ClusterInitSpecs
+
+[parameters Advanced Settings]
+Order = 60
+
+    [[parameters Azure Settings]]
+
+        [[[parameter Credentials]]]
+        Description = The credentials for the cloud provider
+        ParameterType = Cloud.Credentials
+
+        [[[parameter SharedEquinorSpec]]]
+        Label = Shared-Equinor-Spec
+        Description = The version of the shared-equinor specs you want to use
+        ParameterType = string
+        DefaultValue = 'default'
+        Config.Plugin = pico.form.Dropdown
+            [[[[list Config.Entries]]]]
+            Name = default
+            Label = default 
+            [[[[list Config.Entries]]]]
+            Name = full
+            Label = full all
+            [[[[list Config.Entries]]]]
+            Label = ignore resolv.conf
+            Name = no_resolv
+
+        Required = True
+        [[[parameter BootParams]]]
+        Label = Show boot disk params
+        DefaultValue = false
+        ParameterType = Boolean
+
+
+        [[[parameter BootDiskType]]]
+        Label = Boot Disk Type
+        Description = Change default disk type
+        ParameterType = string
+        #DefaultValue = 'Standard_LRS'
+        Conditions.Excluded := BootParams is false
+        Config.Plugin = pico.form.Dropdown
+            [[[[list Config.Entries]]]]
+            Name = UltraSSD_LRS
+            Label = Ultra SSD 
+            [[[[list Config.Entries]]]]
+            Name = Premium_LRS
+            Label = Premium SSD
+            [[[[list Config.Entries]]]]
+            Name = StandardSSD_LRS
+            Label = Standard SSD
+            [[[[list Config.Entries]]]]
+            Name = Standard_LRS
+            Label = Standard HDD
+
+        [[[parameter BootDiskSize]]]
+            Label = Boot Disk Size
+            Description = Disk Size in GB double from 64
+            #DefaultValue = 512
+            #Config.Plugin = pico.form.NumberTextBox
+            #Config.MinValue = 64
+            #Config.IntegerOnly = true
+            Conditions.Excluded := BootParams is false
+            Config.Plugin = pico.form.Dropdown
+            [[[[list Config.Entries]]]]
+            Name = 256
+            Label = 256 GB
+            [[[[list Config.Entries]]]]
+            Name = 512
+            Label = 512 GB
+            [[[[list Config.Entries]]]]
+            Name = 1024
+            Label = 1 TB
+            [[[[list Config.Entries]]]]
+            Name = 2196
+            Label = 2 TB
+
+    [[parameters Advanced Networking]]
+    Description = Advanced networking settings
+
+        [[[parameter ReturnProxy]]]
+        Label = Return Proxy
+        DefaultValue = false
+        ParameterType = Boolean
+        Config.Label = Use SSH tunnel to connect to CycleCloud (required if direct access is blocked)
+
+        [[[parameter UsePublicNetwork]]]
+        Label = Public Head Node
+        DefaultValue = false
+        ParameterType = Boolean
+        Config.Label = Access server node from the Internet
+
+        [[[parameter ExecuteNodesPublic]]]
+        Label = Public Execute
+        DefaultValue = false
+        ParameterType = Boolean
+        Config.Label = Access execute nodes from the Internet
+        Conditions.Excluded := UsePublicNetwork isnt true
+
+        [[[parameter HeadNodeUseStaticIP]]]
+        Label = Static IP on Head Node
+        DefaultValue = false
+        ParameterType = Boolean
+        Config.Label = Assign a static IP address to master/head node
+
+        [[[parameter HeadNodeIPAddress]]]
+        Label = Head Node IP
+        DefaultValue = =undefined
+        ParameterType = String
+        Config.Label = Static IP address for master/head node 
+        Conditions.Excluded := HeadNodeUseStaticIP isnt true
+
+
+    [[parameters Lustre Settings]]        
+    Description = "Use a Lustre cluster as a NAS. Settings for defining the Lustre NAS"
+
+        [[[parameter no_lustre]]]
+        Label = Use lustre 
+        DefaultValue = false
+        ParameterType = Boolean
+
+        [[[parameter LustreClusterName]]]
+        Label = Lustre Cluster
+        Description = IP of the Lustre cluster to connect to.
+        Conditions.Excluded := no_lustre is false
+        [[[parameter LustreMountPoint]]]
+        Label = Lustre MountPoint
+        Description = The mount point to mount the Lustre file server on.
+        DefaultValue = /lustre1
+        Conditions.Excluded := no_lustre is false
+        [[[parameter LustreMountOptions]]]
+        Label = Lustre Options
+        Description = The mount option to mount the Lustre file server on.
+        DefaultValue = "noatime,user_xattr"
+        Conditions.Excluded := no_lustre is false
+
+
+    [[parameters NFS Settings]]
+    Description = "Use an NFS server as a NAS for /prog,/private,/scratch and /project. Settings for defining the NFS"
+        [[[parameter adjoin_am]]]
+        Label = Use automount mounting 
+        DefaultValue = true
+        ParameterType = Boolean
+
+        [[[parameter NFSExportProg]]]
+        Label = Prog ExportPoint
+        Description = The export point for prog volume from the NFS file server.
+        DefaultValue = /prog01
+        Config.Plugin = pico.form.QueryDropdown
+        Config.Query = select Export as Name from Equinor.ANFexports where type  == "prog" 
+        Conditions.Excluded := adjoin_am is true
+
+        [[[parameter NFSExportPrivate]]]
+        Label = Private ExportPoint
+        Description = The export point for private volume from the NFS file server.
+        DefaultValue = /prog01
+        Config.Plugin = pico.form.QueryDropdown
+        Config.Query = select Export as Name from Equinor.ANFExports where type  == "private"  || type  == "priv"
+        Conditions.Excluded := adjoin_am is true
+
+        [[[parameter NFSExportScratch]]]
+        Label = Scratch ExportPoint
+        Description = The export point for scratch volume from the NFS file server.
+        DefaultValue = /scratch01
+        Config.Plugin = pico.form.QueryDropdown
+        Config.Query = select Export as Name from Equinor.ANFExports where type  == "scratch"  || type  == "project" || type == "work" || type  == "proj"
+        Conditions.Excluded := adjoin_am is true
+
+        [[[parameter NFSExportWork]]]
+        Label = Work ExportPoint
+        Description = The export point for work volume from the NFS file server.
+        DefaultValue = /work01
+        Config.Plugin = pico.form.QueryDropdown
+        Config.Query = select Export as Name from Equinor.ANFExports where type  == "work" 
+        Conditions.Excluded := adjoin_am is true
+
+        [[[parameter NFSExportProject]]]
+        Label = Project ExportPoint
+        Description = The export point for Project volume from the NFS file server.
+        DefaultValue = /project01
+        Config.Plugin = pico.form.QueryDropdown
+        Config.Query = select Export as Name from Equinor.ANFExports where type  == "project" || type  == "proj"
+        Conditions.Excluded := adjoin_am is true
+
+        [[[parameter NFSMountPointScratch]]]
+        Label = Scratch MountPoint
+        Description = The mount point to mount the NFS file server on.
+        DefaultValue = /scratchnfs
+        Conditions.Excluded := adjoin_am is true
+
+
+        [[[parameter NFSMountPointWork]]]
+        Label = Work MountPoint
+        Description = The mount point to mount the NFS file server on.
+        DefaultValue = /work
+        Conditions.Excluded := adjoin_am is true
+
+        [[[parameter NFSMountPointProject]]]
+        Label = Project MountPoint
+        Description = The mount point to mount the NFS file server on.
+        DefaultValue = /project
+        Conditions.Excluded := no_project is false  || adjoin_am is true
+
+[parameters Cost Settings]
+Order = 70
+
+    [[parameters Primary Cost Allocation]]
+    Order = 72
+
+        [[[parameter costallocationcode]]]
+        Label = WBS code for cluster
+        Description = WBS code for cluster resources
+        Config.Plugin = pico.form.StringTextBox
+        DefaultValue = "TOBESPECIFIED"
+        Config.NumLines = 1
+        Required = True
+
+
+    [[parameters Static Nodes  Cost Allocation]]
+    Order = 73
+
+        [[[parameter static_wbs]]]
+        Label = Use  Static Node Cost Allocation
+        DefaultValue = false
+        ParameterType = Boolean
+
+        [[[parameter costallocationcode2]]]
+        Label = WBS code for cluster
+        Description = WBS code for cluster execute resources
+        Config.Plugin = pico.form.StringTextBox
+        DefaultValue = "TOBESPECIFIED"
+        Config.NumLines = 1
+        Conditions.Excluded := static_wbs is false
+
+      [[parameter ANFRegion]]
+        ParameterType = hidden 
+        [[[record DefaultValue]]]
+        s034-westeurope = "10.75.35.4"
+        s268-westeurope = "10.75.156.68"
+        s268-southcentralus = "10.76.76.132"
+
+      [[parameter TZREGION]]
+        ParameterType = hidden 
+        [[[record DefaultValue]]]
+        westeurope = CET
+        westus2 = US/Pacific
+        southcentralus = US/Central
+
+      [[parameter REGIONSQL]]
+        ParameterType = hidden 
+        [[[record DefaultValue]]]
+        westeurope = 'select ClusterName as Name from Cloud.Node where Cluster().IsTemplate =!= True && ClusterInitSpecs["nfs:default"] isnt undefined && status  === "Ready" && Region === "westeurope"'
+        westus2 = 'select ClusterName as Name from Cloud.Node where Cluster().IsTemplate =!= True && ClusterInitSpecs["nfs:default"] isnt undefined && status  === "Ready" && Region === "westus2"'
+        southcentralus = 'select ClusterName as Name from Cloud.Node where Cluster().IsTemplate =!= True && ClusterInitSpecs["nfs:default"] isnt undefined && status  === "Ready" && Region === "southcentralus"'
+
+[parameters Queues definitions]
+
+Order = 80
+
+  [[parameters Queue Access Control]]
+  Order = 82
+
+  [[[parameter EnableAccessControl]]]
+        Label = Q Access Control
+        DefaultValue = false
+        Widget.Plugin = pico.form.BooleanCheckBox
+        Widget.Label = Control Job Submit Access
+
+  [[[parameter QueueAccessGroup]]]
+        Label = Linux Group Name
+        Description = List of Linux groups for job submission , comma separated
+        Config.Plugin = pico.form.StringTextBox
+        DefaultValue = "none"
+        Config.NumLines = 1
+        Conditions.Excluded := EnableAccessControl is false
+
+  [[parameters Change Job History Retention]]
+  Order = 86
+
+  [[[parameter EnableJobHistoryRetention]]]
+        Label = Change Job History Retention
+        DefaultValue = false
+        Widget.Plugin = pico.form.BooleanCheckBox
+        #Widget.Label = Control Job Submit Access
+
+  [[[parameter JobHistoryRetention]]]
+        Label = Keep Job History
+        Description = HH:MM:SS to Keep Job History
+        Config.Plugin = pico.form.StringTextBox
+        DefaultValue = "336:00:00"
+        Config.NumLines = 1
+        Conditions.Excluded := EnableJobHistoryRetention is false
+
+
+  [[parameters  Queue Definitions]]
+  Order = 90
+    [[[parameter MachineTypeQ1]]]
+        Label = Queue  Q1  VM Type
+        Description = The Q VM type for queue 1
+        ParameterType = Cloud.MachineType
+        DefaultValue = Standard_D32ds_v4
+
+    [[[parameter MaxQ1]]]
+        Label = Queue Q1  Q cores
+        Description = The max number of queue Q1 cores to start
+        DefaultValue = 1200
+        Config.Plugin = pico.form.NumberTextBox
+        Config.MinValue = 1
+        Config.IntegerOnly = true
+
+    [[[parameter StartQ1]]]
+        Label = Queue Q1  Initial vms
+        Description = The initial number of vms to start
+        DefaultValue = 0
+        Config.Plugin = pico.form.NumberTextBox
+        Config.MinValue = 0
+        Config.IntegerOnly = true
+
+
+  [[[parameter QueueNameQ1]]]
+        Label = Queue Q1 Name
+        Description = Name of Queue Q1
+        Config.Plugin = pico.form.StringTextBox
+        DefaultValue = "normal"
+        Config.NumLines = 1
+
+  [[[parameter QueueQ1Place]]]
+        Label = Queue job placement
+        Description = Queue Q1 Placement Rules
+        Config.Plugin = pico.form.StringTextBox
+        DefaultValue = "scatter:excl:group=group_id"
+        Config.NumLines = 1
+
+  [[[parameter QueueQ1ungrouped]]]
+        Label = Queue ungrouped 
+        Description = Queue Q1 ungrouping Rules
+        Config.Plugin = pico.form.BooleanCheckBox
+        DefaultValue = false
+
+  [[[parameter UseLowPrio1]]]
+        Label = Low Priority
+        DefaultValue = false
+        Widget.Plugin = pico.form.BooleanCheckBox
+        Widget.Label = Use low priority instances for queue Q1  hosts
+
+  [[[parameter costallocationcodeQ1]]]
+        Label = WBS code for queue Q1
+        Description = WBS code for queue Q1  resources
+        Config.Plugin = pico.form.StringTextBox
+        DefaultValue = "TOBESPECIFIED"
+        Config.NumLines = 1
+        Required = True
+
+  [[[parameter wbsQ1]]]
+        Label = set queue Q1 wbs
+        DefaultValue = false
+        ParameterType = Boolean
+
+[[[parameter costallocationcodeQ1]]]
+        Label = WBS code for Q1
+        Description = WBS code for cluster execute resources
+        Config.Plugin = pico.form.StringTextBox
+        DefaultValue = "TOBESPECIFIED"
+        Config.NumLines = 1
+        Conditions.Excluded := wbsQ1 is false
+
+        [[[parameter q1_image_override]]]
+        Label = Overide Q1 image 
+        DefaultValue = false
+        ParameterType = Boolean
+
+        [[[parameter Q1ImageOverride]]]
+        Label = Free Text Q1 Image Name
+        Description = Free text format image_def_name/versions/version_number
+        Conditions.Excluded := q1_image_override is false
+
+  Order = 100
+    [[[parameter showQ2]]]
+        Label = show Q2
+        DefaultValue = false
+        ParameterType = Boolean
+
+    [[[parameter MachineTypeQ2]]]
+        Label = Queue  Q2  VM Type
+        Description = The Q VM type for queue Q2
+        ParameterType = Cloud.MachineType
+        DefaultValue = Standard_D32ds_v4
+        Conditions.Excluded := showQ2 is false
+
+    [[[parameter MaxQ2]]]
+        Label = Queue Q2  Q cores
+        Description = The max number of queue Q2 cores to start
+        DefaultValue = 1200
+        Config.Plugin = pico.form.NumberTextBox
+        Config.MinValue = 1
+        Config.IntegerOnly = true
+        Conditions.Excluded := showQ2 is false
+
+
+  [[[parameter QueueNameQ2]]]
+        Label = Queue Q2 Name
+        Description = Name of Queue Q2
+        Config.Plugin = pico.form.StringTextBox
+        DefaultValue = "short"
+        Config.NumLines = 1
+        Conditions.Excluded := showQ2 is false
+
+  [[[parameter QueueQ2Place]]]
+        Label = Queue job placement
+        Description = Queue Q2 Placement Rules
+        Config.Plugin = pico.form.StringTextBox
+        DefaultValue = "free:shared:group=group_id"
+        Config.NumLines = 1
+        Conditions.Excluded := showQ2 is false
+
+  [[[parameter QueueQ2ungrouped]]]
+        Label = Queue ungrouped 
+        Description = Queue Q2 ungrouping Rules
+        Config.Plugin = pico.form.BooleanCheckBox
+        DefaultValue = false
+        Conditions.Excluded := showQ2 is false
+
+  [[[parameter UseLowPrio2]]]
+        Label = Low Priority
+        DefaultValue = false
+        Widget.Plugin = pico.form.BooleanCheckBox
+        Widget.Label = Use low priority instances for queue Q2  hosts
+        Conditions.Excluded := showQ2 is false
+
+
+  [[[parameter wbsQ2]]]
+        Label = set queue Q2 wbs
+        DefaultValue = false
+        ParameterType = Boolean
+        Conditions.Excluded := showQ2 is false
+
+[[[parameter costallocationcodeQ2]]]
+        Label = WBS code for Q2
+        Description = WBS code for cluster execute resources
+        Config.Plugin = pico.form.StringTextBox
+        DefaultValue = "TOBESPECIFIED"
+        Config.NumLines = 1
+        Conditions.Excluded := wbsQ2 is false || showQ2 is false
+
+        [[[parameter q2_image_override]]]
+        Label = Overide Q2 image 
+        DefaultValue = false
+        ParameterType = Boolean
+        Conditions.Excluded := showQ2 is false
+
+        [[[parameter Q2ImageOverride]]]
+        Label = Free Text Q2 Image Name
+        Description = Free text format image_def_name/versions/version_number
+        Conditions.Excluded := q2_image_override is false || showQ2 is false
+
+  Order = 110
+    [[[parameter showQ3]]]
+        Label = show Q3
+        DefaultValue = false
+        ParameterType = Boolean
+
+    [[[parameter MachineTypeQ3]]]
+        Label = Queue  Q3  VM Type
+        Description = The Q VM type for queue Q3
+        ParameterType = Cloud.MachineType
+        DefaultValue = Standard_D32ds_v4
+        Conditions.Excluded := showQ3 is false
+
+    [[[parameter MaxQ3]]]
+        Label = Queue Q3  Q cores
+        Description = The max number of queue Q3 cores to start
+        DefaultValue = 1200
+        Config.Plugin = pico.form.NumberTextBox
+        Config.MinValue = 1
+        Config.IntegerOnly = true
+        Conditions.Excluded := showQ3 is false
+
+
+  [[[parameter QueueNameQ3]]]
+        Label = Queue Q3 Name
+        Description = Name of Queue Q3
+        Config.Plugin = pico.form.StringTextBox
+        DefaultValue = "normal3"
+        Config.NumLines = 1
+        Conditions.Excluded := showQ3 is false
+
+  [[[parameter QueueQ3Place]]]
+        Label = Queue job placement
+        Description = Queue Q3 Placement Rules
+        Config.Plugin = pico.form.StringTextBox
+        DefaultValue = "scatter:excl:group=group_id"
+        Config.NumLines = 1
+        Conditions.Excluded := showQ3 is false
+
+  [[[parameter QueueQ3ungrouped]]]
+        Label = Queue ungrouped 
+        Description = Queue Q3 ungrouping Rules
+        Config.Plugin = pico.form.BooleanCheckBox
+        DefaultValue = false
+        Conditions.Excluded := showQ3 is false
+
+  [[[parameter UseLowPrio3]]]
+        Label = Low Priority
+        DefaultValue = false
+        Widget.Plugin = pico.form.BooleanCheckBox
+        Widget.Label = Use low priority instances for queue Q3  hosts
+        Conditions.Excluded := showQ3 is false
+
+
+  [[[parameter wbsQ3]]]
+        Label = set queue Q3 wbs
+        DefaultValue = false
+        ParameterType = Boolean
+        Conditions.Excluded := showQ3 is false
+
+[[[parameter costallocationcodeQ3]]]
+        Label = WBS code for Q3
+        Description = WBS code for cluster execute resources
+        Config.Plugin = pico.form.StringTextBox
+        DefaultValue = "TOBESPECIFIED"
+        Config.NumLines = 1
+        Conditions.Excluded := wbsQ3 is false || showQ3 is false
+
+        [[[parameter q3_image_override]]]
+        Label = Overide Q3 image 
+        DefaultValue = false
+        ParameterType = Boolean
+        Conditions.Excluded := showQ3 is false
+
+
+        [[[parameter Q3ImageOverride]]]
+        Label = Free Text Q3 Image Name
+        Description = Free text format image_def_name/versions/version_number
+        Conditions.Excluded := q3_image_override is false || showQ3 is false
+
+  Order = 120
+    [[[parameter showQ4]]]
+        Label = show Q4
+        DefaultValue = false
+        ParameterType = Boolean
+
+    [[[parameter MachineTypeQ4]]]
+        Label = Queue  Q4  VM Type
+        Description = The Q VM type for queue Q4
+        ParameterType = Cloud.MachineType
+        DefaultValue = Standard_D32ds_v4
+        Conditions.Excluded := showQ4 is false
+
+    [[[parameter MaxQ4]]]
+        Label = Queue Q4  Q cores
+        Description = The max number of queue Q4 cores to start
+        DefaultValue = 1200
+        Config.Plugin = pico.form.NumberTextBox
+        Config.MinValue = 1
+        Config.IntegerOnly = true
+        Conditions.Excluded := showQ4 is false
+
+
+  [[[parameter QueueNameQ4]]]
+        Label = Queue Q4 Name
+        Description = Name of Queue Q4
+        Config.Plugin = pico.form.StringTextBox
+        DefaultValue = "normal4"
+        Config.NumLines = 1
+        Conditions.Excluded := showQ4 is false
+
+  [[[parameter QueueQ4Place]]]
+        Label = Queue job placement
+        Description = Queue Q4 Placement Rules
+        Config.Plugin = pico.form.StringTextBox
+        DefaultValue = "scatter:excl:group=group_id"
+        Config.NumLines = 1
+        Conditions.Excluded := showQ4 is false
+
+  [[[parameter QueueQ4ungrouped]]]
+        Label = Queue ungrouped 
+        Description = Queue Q4 ungrouping Rules
+        Config.Plugin = pico.form.BooleanCheckBox
+        DefaultValue = false
+        Conditions.Excluded := showQ4 is false
+
+  [[[parameter UseLowPrio4]]]
+        Label = Low Priority
+        DefaultValue = false
+        Widget.Plugin = pico.form.BooleanCheckBox
+        Widget.Label = Use low priority instances for queue Q4  hosts
+        Conditions.Excluded := showQ4 is false
+
+
+  [[[parameter wbsQ4]]]
+        Label = set queue Q4 wbs
+        DefaultValue = false
+        ParameterType = Boolean
+        Conditions.Excluded := showQ4 is false
+
+[[[parameter costallocationcodeQ4]]]
+        Label = WBS code for Q4
+        Description = WBS code for cluster execute resources
+        Config.Plugin = pico.form.StringTextBox
+        DefaultValue = "TOBESPECIFIED"
+        Config.NumLines = 1
+        Conditions.Excluded := wbsQ4 is false || showQ4 is false
+
+        [[[parameter q4_image_override]]]
+        Label = Overide Q4 image 
+        DefaultValue = false
+        ParameterType = Boolean
+        Conditions.Excluded := showQ4 is false
+
+        [[[parameter Q4ImageOverride]]]
+        Label = Free Text Q4 Image Name
+        Description = Free text format image_def_name/versions/version_number
+        Conditions.Excluded := q4_image_override is false || showQ4 is false
+
+  Order = 130
+    [[[parameter showQ5]]]
+        Label = show Q5
+        DefaultValue = false
+        ParameterType = Boolean
+
+    [[[parameter MachineTypeQ5]]]
+        Label = Queue  Q5  VM Type
+        Description = The Q VM type for queue Q5
+        ParameterType = Cloud.MachineType
+        DefaultValue = Standard_D32ds_v4
+        Conditions.Excluded := showQ5 is false
+
+    [[[parameter MaxQ5]]]
+        Label = Queue Q5  Q cores
+        Description = The max number of queue Q5 cores to start
+        DefaultValue = 1200
+        Config.Plugin = pico.form.NumberTextBox
+        Config.MinValue = 1
+        Config.IntegerOnly = true
+        Conditions.Excluded := showQ5 is false
+
+
+  [[[parameter QueueNameQ5]]]
+        Label = Queue Q5 Name
+        Description = Name of Queue Q5
+        Config.Plugin = pico.form.StringTextBox
+        DefaultValue = "normal5"
+        Config.NumLines = 1
+        Conditions.Excluded := showQ5 is false
+
+  [[[parameter QueueQ5Place]]]
+        Label = Queue job placement
+        Description = Queue Q5 Placement Rules
+        Config.Plugin = pico.form.StringTextBox
+        DefaultValue = "scatter:excl:group=group_id"
+        Config.NumLines = 1
+        Conditions.Excluded := showQ5 is false
+
+  [[[parameter QueueQ5ungrouped]]]
+        Label = Queue ungrouped 
+        Description = Queue Q5 ungrouping Rules
+        Config.Plugin = pico.form.BooleanCheckBox
+        DefaultValue = false
+        Conditions.Excluded := showQ5 is false
+
+  [[[parameter UseLowPrio5]]]
+        Label = Low Priority
+        DefaultValue = false
+        Widget.Plugin = pico.form.BooleanCheckBox
+        Widget.Label = Use low priority instances for queue Q5  hosts
+        Conditions.Excluded := showQ5 is false
+
+
+  [[[parameter wbsQ5]]]
+        Label = set queue Q5 wbs
+        DefaultValue = false
+        ParameterType = Boolean
+        Conditions.Excluded := showQ5 is false
+
+[[[parameter costallocationcodeQ5]]]
+        Label = WBS code for Q5
+        Description = WBS code for cluster execute resources
+        Config.Plugin = pico.form.StringTextBox
+        DefaultValue = "TOBESPECIFIED"
+        Config.NumLines = 1
+        Conditions.Excluded := wbsQ5 is false || showQ5 is false
+
+        [[[parameter q5_image_override]]]
+        Label = Overide Q5 image 
+        DefaultValue = false
+        ParameterType = Boolean
+        Conditions.Excluded := showQ5 is false
+
+        [[[parameter Q5ImageOverride]]]
+        Label = Free Text Q5 Image Name
+        Description = Free text format image_def_name/versions/version_number
+        Conditions.Excluded := q5_image_override is false || showQ5 is false
+
+  Order = 140
+    [[[parameter showQ6]]]
+        Label = show Q6
+        DefaultValue = false
+        ParameterType = Boolean
+
+    [[[parameter MachineTypeQ6]]]
+        Label = Queue  Q6  VM Type
+        Description = The Q VM type for queue Q6
+        ParameterType = Cloud.MachineType
+        DefaultValue = Standard_D32ds_v4
+        Conditions.Excluded := showQ6 is false
+
+    [[[parameter MaxQ6]]]
+        Label = Queue Q6  Q cores
+        Description = The max number of queue Q6 cores to start
+        DefaultValue = 1200
+        Config.Plugin = pico.form.NumberTextBox
+        Config.MinValue = 1
+        Config.IntegerOnly = true
+        Conditions.Excluded := showQ6 is false
+
+
+  [[[parameter QueueNameQ6]]]
+        Label = Queue Q6 Name
+        Description = Name of Queue Q6
+        Config.Plugin = pico.form.StringTextBox
+        DefaultValue = "normal6"
+        Config.NumLines = 1
+        Conditions.Excluded := showQ6 is false
+
+  [[[parameter QueueQ6Place]]]
+        Label = Queue job placement
+        Description = Queue Q6 Placement Rules
+        Config.Plugin = pico.form.StringTextBox
+        DefaultValue = "scatter:excl:group=group_id"
+        Config.NumLines = 1
+        Conditions.Excluded := showQ6 is false
+
+  [[[parameter QueueQ6ungrouped]]]
+        Label = Queue ungrouped 
+        Description = Queue Q6 ungrouping Rules
+        Config.Plugin = pico.form.BooleanCheckBox
+        DefaultValue = false
+        Conditions.Excluded := showQ6 is false
+
+  [[[parameter UseLowPrio6]]]
+        Label = Low Priority
+        DefaultValue = false
+        Widget.Plugin = pico.form.BooleanCheckBox
+        Widget.Label = Use low priority instances for queue Q6  hosts
+        Conditions.Excluded := showQ6 is false
+
+  [[[parameter wbsQ6]]]
+        Label = set queue Q6 wbs
+        DefaultValue = false
+        ParameterType = Boolean
+        Conditions.Excluded := showQ6 is false
+
+[[[parameter costallocationcodeQ6]]]
+        Label = WBS code for Q6
+        Description = WBS code for cluster execute resources
+        Config.Plugin = pico.form.StringTextBox
+        DefaultValue = "TOBESPECIFIED"
+        Config.NumLines = 1
+        Conditions.Excluded := wbsQ6 is false || showQ6 is false
+
+        [[[parameter q6_image_override]]]
+        Label = Overide Q6 image 
+        DefaultValue = false
+        ParameterType = Boolean
+        Conditions.Excluded := showQ6 is false
+
+        [[[parameter Q6ImageOverride]]]
+        Label = Free Text Q6 Image Name
+        Description = Free text format image_def_name/versions/version_number
+        Conditions.Excluded := q6_image_override is false || showQ6 is false
+
+  Order = 150
+    [[[parameter showQ7]]]
+        Label = show Q7
+        DefaultValue = false
+        ParameterType = Boolean
+
+    [[[parameter MachineTypeQ7]]]
+        Label = Queue  Q7  VM Type
+        Description = The Q VM type for queue Q7
+        ParameterType = Cloud.MachineType
+        DefaultValue = Standard_D32ds_v4
+        Conditions.Excluded := showQ7 is false
+
+    [[[parameter MaxQ7]]]
+        Label = Queue Q7  Q cores
+        Description = The max number of queue Q7 cores to start
+        DefaultValue = 1200
+        Config.Plugin = pico.form.NumberTextBox
+        Config.MinValue = 1
+        Config.IntegerOnly = true
+        Conditions.Excluded := showQ7 is false
+
+
+  [[[parameter QueueNameQ7]]]
+        Label = Queue Q7 Name
+        Description = Name of Queue Q7
+        Config.Plugin = pico.form.StringTextBox
+        DefaultValue = "normal7"
+        Config.NumLines = 1
+        Conditions.Excluded := showQ7 is false
+
+  [[[parameter QueueQ7Place]]]
+        Label = Queue job placement
+        Description = Queue Q7 Placement Rules
+        Config.Plugin = pico.form.StringTextBox
+        DefaultValue = "scatter:excl:group=group_id"
+        Config.NumLines = 1
+        Conditions.Excluded := showQ7 is false
+
+  [[[parameter QueueQ7ungrouped]]]
+        Label = Queue ungrouped 
+        Description = Queue Q7 ungrouping Rules
+        Config.Plugin = pico.form.BooleanCheckBox
+        DefaultValue = false
+        Conditions.Excluded := showQ7 is false
+
+  [[[parameter UseLowPrio7]]]
+        Label = Low Priority
+        DefaultValue = false
+        Widget.Plugin = pico.form.BooleanCheckBox
+        Widget.Label = Use low priority instances for queue Q7  hosts
+        Conditions.Excluded := showQ7 is false
+
+
+  [[[parameter wbsQ7]]]
+        Label = set queue Q7 wbs
+        DefaultValue = false
+        ParameterType = Boolean
+        Conditions.Excluded := showQ7 is false
+
+[[[parameter costallocationcodeQ7]]]
+        Label = WBS code for Q7
+        Description = WBS code for cluster execute resources
+        Config.Plugin = pico.form.StringTextBox
+        DefaultValue = "TOBESPECIFIED"
+        Config.NumLines = 1
+        Conditions.Excluded := wbsQ7 is false || showQ7 is false
+
+        [[[parameter q7_image_override]]]
+        Label = Overide Q7 image 
+        DefaultValue = false
+        ParameterType = Boolean
+        Conditions.Excluded := showQ7 is false
+
+        [[[parameter Q7ImageOverride]]]
+        Label = Free Text Q7 Image Name
+        Description = Free text format image_def_name/versions/version_number
+        Conditions.Excluded := q7_image_override is false || showQ7 is false
+
+  Order = 160
+    [[[parameter showQ8]]]
+        Label = show Q8
+        DefaultValue = false
+        ParameterType = Boolean
+
+    [[[parameter MachineTypeQ8]]]
+        Label = Queue  Q8  VM Type
+        Description = The Q VM type for queue Q8
+        ParameterType = Cloud.MachineType
+        DefaultValue = Standard_D32ds_v4
+        Conditions.Excluded := showQ8 is false
+
+    [[[parameter MaxQ8]]]
+        Label = Queue Q8  Q cores
+        Description = The max number of queue Q8 cores to start
+        DefaultValue = 1200
+        Config.Plugin = pico.form.NumberTextBox
+        Config.MinValue = 1
+        Config.IntegerOnly = true
+        Conditions.Excluded := showQ8 is false
+
+  [[[parameter QueueNameQ8]]]
+        Label = Queue Q8 Name
+        Description = Name of Queue Q8
+        Config.Plugin = pico.form.StringTextBox
+        DefaultValue = "normal8"
+        Config.NumLines = 1
+        Conditions.Excluded := showQ8 is false
+
+  [[[parameter QueueQ8Place]]]
+        Label = Queue job placement
+        Description = Queue Q8 Placement Rules
+        Config.Plugin = pico.form.StringTextBox
+        DefaultValue = "scatter:excl:group=group_id"
+        Config.NumLines = 1
+        Conditions.Excluded := showQ8 is false
+
+  [[[parameter QueueQ8ungrouped]]]
+        Label = Queue ungrouped 
+        Description = Queue Q8 ungrouping Rules
+        Config.Plugin = pico.form.BooleanCheckBox
+        DefaultValue = false
+        Conditions.Excluded := showQ8 is false
+
+  [[[parameter UseLowPrio8]]]
+        Label = Low Priority
+        DefaultValue = false
+        Widget.Plugin = pico.form.BooleanCheckBox
+        Widget.Label = Use low priority instances for queue Q8  hosts
+        Conditions.Excluded := showQ8 is false
+
+
+  [[[parameter wbsQ8]]]
+        Label = set queue Q8 wbs
+        DefaultValue = false
+        ParameterType = Boolean
+        Conditions.Excluded := showQ8 is false
+
+[[[parameter costallocationcodeQ8]]]
+        Label = WBS code for Q8
+        Description = WBS code for cluster execute resources
+        Config.Plugin = pico.form.StringTextBox
+        DefaultValue = "TOBESPECIFIED"
+        Config.NumLines = 1
+        Conditions.Excluded := showQ8 is false
+
+        [[[parameter q8_image_override]]]
+        Label = Overide Q8 image 
+        DefaultValue = false
+        ParameterType = Boolean
+        Conditions.Excluded := showQ8 is false
+
+        [[[parameter Q8ImageOverride]]]
+        Label = Free Text Q8 Image Name
+        Description = Free text format image_def_name/versions/version_number
+        Conditions.Excluded := q8_image_override is false || showQ8 is false
+
+  Order = 170
+    [[[parameter showQ9]]]
+        Label = show Q9
+        DefaultValue = false
+        ParameterType = Boolean
+
+    [[[parameter MachineTypeQ9]]]
+        Label = Queue  Q9  VM Type
+        Description = The Q VM type for queue Q9
+        ParameterType = Cloud.MachineType
+        DefaultValue = Standard_D32ds_v4
+        Conditions.Excluded := showQ9 is false
+
+    [[[parameter MaxQ9]]]
+        Label = Queue Q9  Q cores
+        Description = The max number of queue Q9 cores to start
+        DefaultValue = 1200
+        Config.Plugin = pico.form.NumberTextBox
+        Config.MinValue = 1
+        Config.IntegerOnly = true
+        Conditions.Excluded := showQ9 is false
+
+
+
+    [[[parameter UseLowPrio9]]]
+        Label = Low Priority
+        DefaultValue = false
+        Widget.Plugin = pico.form.BooleanCheckBox
+        Widget.Label = Use low priority instances for array Q9  hosts
+        Conditions.Excluded := showQ9 is false
+
+
+    [[[parameter wbsQ9]]]
+        Label = set array Q9 wbs
+        DefaultValue = false
+        ParameterType = Boolean
+        Conditions.Excluded := showQ9 is false
+
+[[[parameter costallocationcodeQ9]]]
+        Label = WBS code for Q9
+        Description = WBS code for cluster execute resources
+        Config.Plugin = pico.form.StringTextBox
+        DefaultValue = "TOBESPECIFIED"
+        Config.NumLines = 1
+        Conditions.Excluded := wbsQ9 is false || showQ9 is false
+
+        [[[parameter q9_image_override]]]
+        Label = Overide Q9 image 
+        DefaultValue = false
+        ParameterType = Boolean
+        Conditions.Excluded := showQ9 is false
+
+        [[[parameter Q9ImageOverride]]]
+        Label = Free Text Q9 Image Name
+        Description = Free text format image_def_name/versions/version_number
+        Conditions.Excluded := q9_image_override is false || showQ9 is false
+
+  [[[parameter HW]]]
+     ParameterType = hidden 
+     [[[[record DefaultValue]]]]
+     Standard_D32ds_v4 = D32
+     Standard_D32ds_v5 = D32
+     Standard_D16ds_v4 = D32
+     Standard_D16ds_v5 = D32
+     Standard_HC44rs = HC44
+     Standard_HB120rs_v3 = HB120
+     Standard_HB120rs_v2 = HB120
+     Standard_HB60rs = HB120
+     Standard_NC24s_v2 = NC24v2
+     Standard_NC24s_v3 = NC24v3
+     Standard_NC24ads_A100_v4 = NC24v3
+     Standard_NC48ads_A100_v4 = NC24v3
+     Standard_NC96ads_A100_v4 = NC24v3
+     Standard_NC40ads_H100_v5 = NC24v3
+     Standard_NC80ads_H100_v5 = NC24v3
