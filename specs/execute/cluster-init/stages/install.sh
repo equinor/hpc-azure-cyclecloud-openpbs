@@ -5,8 +5,7 @@ source "${CYCLECLOUD_PROJECT_PATH}/default/files/default.sh" || fail
 
 "${CYCLECLOUD_PROJECT_PATH}/default/scripts/hwlocs-install.sh" || fail
 
-#EXECUTE_HOSTNAME=$(jetpack config hostname) || fail
-EXECUTE_HOSTNAME=$(hostname -s) || fail # hostname may have changed - this is what pbs cares about
+EXECUTE_HOSTNAME=$(jetpack config hostname) || fail
 PACKAGE_NAME=$(get_package_name "execution") || fail
 SERVER_HOSTNAME=$(get_server_hostname) || fail
 
@@ -35,6 +34,8 @@ if [[ -n "$SERVER_HOSTNAME" ]]; then
 fi
 
 await_node_definition() {
+    # hostname may have changed - this is what pbs cares about for EXECUTE_HOSTNAME
+    EXECUTE_HOSTNAME=$(hostname -s)
     if ! /opt/pbs/bin/pbsnodes "$EXECUTE_HOSTNAME"; then
         echo "${EXECUTE_HOSTNAME} is not in the cluster yet. Retrying next converge" 1>&2
         return 1
