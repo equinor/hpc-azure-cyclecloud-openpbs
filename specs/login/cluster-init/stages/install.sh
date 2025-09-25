@@ -8,8 +8,13 @@ source "${CYCLECLOUD_PROJECT_PATH}/default/files/default.sh" || fail
 PACKAGE_NAME=$(get_package_name "client") || fail
 SERVER_HOSTNAME=$(get_server_hostname) || fail
 
-jetpack download --project pbspro "$PACKAGE_NAME" "/tmp" || fail
-yum install -y -q "/tmp/$PACKAGE_NAME" || fail
+if rpm -q "$PACKAGE_NAME"
+then
+    echo "$PACKAGE_NAME is already installed - no download/install needed"
+else
+    jetpack download --project pbspro "$PACKAGE_NAME" "/tmp" || fail
+    yum install -y -q "/tmp/$PACKAGE_NAME" || fail
+fi
 
 if [[ -n "$SERVER_HOSTNAME" ]]; then
     sed -e "s|__SERVERNAME__|${SERVER_HOSTNAME}|g" \
