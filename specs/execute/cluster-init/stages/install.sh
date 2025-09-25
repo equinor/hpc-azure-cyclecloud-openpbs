@@ -5,7 +5,8 @@ source "${CYCLECLOUD_PROJECT_PATH}/default/files/default.sh" || fail
 
 "${CYCLECLOUD_PROJECT_PATH}/default/scripts/hwlocs-install.sh" || fail
 
-EXECUTE_HOSTNAME=$(jetpack config hostname) || fail
+#EXECUTE_HOSTNAME=$(jetpack config hostname) || fail
+EXECUTE_HOSTNAME=$(hostname -s) || fail # hostname may have changed - this is what pbs cares about
 PACKAGE_NAME=$(get_package_name "execution") || fail
 SERVER_HOSTNAME=$(get_server_hostname) || fail
 
@@ -13,8 +14,13 @@ SERVER_HOSTNAME=$(get_server_hostname) || fail
 # TODO: this installation status should be done by jetpack before cluster-inits are run
 "${CYCLECLOUD_HOME}/system/embedded/bin/python" -c "import jetpack.converge as jc; jc._send_installation_status('warning')"
 
-jetpack download --project pbspro "$PACKAGE_NAME" "/tmp" || fail
-yum install -y -q "/tmp/$PACKAGE_NAME" || fail
+if rpm -q "$PACKAGE_NAME"
+then
+    echo "$PACKAGE_NAME is already installed - no download/install needed"
+else
+    jetpack download --project pbspro "$PACKAGE_NAME" "/tmp" || fail
+    yum install -y -q "/tmp/$PACKAGE_NAME" || fail
+fi
 
 if [[ -n "$SERVER_HOSTNAME" ]]; then
     echo "$SERVER_HOSTNAME" > /var/spool/pbs/server_name
@@ -40,6 +46,7 @@ readonly RETRY_DELAY=15
 ATTEMPT=1
 if ! await_node_definition; then
     while [[ $ATTEMPT -lt $MAX_RETRIES ]]; do
+        systemctl restart pbs
         sleep $RETRY_DELAY
         ((ATTEMPT+=1))
         
