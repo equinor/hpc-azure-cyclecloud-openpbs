@@ -17,4 +17,4 @@ if [[ -n "$SERVER_HOSTNAME" ]]; then
     chmod 0644 /etc/pbs.conf || fail
 fi
 
-/opt/pbs/bin/qmgr -c "set server flatuid=true" || fail
+# Not needed. Login nodes have no daemons: /opt/pbs/bin/qmgr -c "set server flatuid=true" || fail
