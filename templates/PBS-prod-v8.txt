@@ -35,12 +35,11 @@ Autoscale = $Autoscale
 ssh_pwauth: yes
 
 # Uncomment for ephemeral disk on /tmp
-#mounts:
-#- [ ephemeral0, /tmp ]
+mounts:
+- [ ephemeral0, /tmp ]
 
 # NOTE: Disabling repos must be done one at time
 #       For isolated compute nodes, do --set-disabled '*' 
-#       (save for all first - then modify q1-q9)
 #       
 runcmd:
   - date > /tmp/cloud-init-date.log
@@ -51,10 +50,7 @@ runcmd:
   - ls -al /var/lib/rpm > /tmp/var-lib-rpm.log
   - sed -i 's/^proxy=/#proxy=/' /etc/yum.conf /etc/dnf/dnf.conf
   - sed -i 's/^failovermethod/#failovermethod/' /etc/yum.repos.d/opm.repo
-  - dnf config-manager --set-disabled cyclecloud 
-  - dnf config-manager --set-disabled epel
-  - dnf config-manager --set-disabled cuda
-  - dnf config-manager --set-disabled azure-cli
+  - dnf config-manager --set-disabled '*'
   - systemctl stop update-client-package.timer
   - systemctl disable update-client-package.timer
   - systemctl stop update-client-package.service
@@ -171,6 +167,36 @@ runcmd:
     tags.UpdateSchedule = 6
     AwaitInstallationTimeout = 15
     SubnetId =  ${(toggle_MasterSubnetId is false) ? SubnetId : MasterSubnetId}
+    CloudInit = '''#cloud-config
+ssh_pwauth: yes
+
+# Uncomment for ephemeral disk on /tmp
+#mounts:
+#- [ ephemeral0, /tmp ]
+
+# NOTE: Disabling repos must be done one at time
+#       For isolated compute nodes we use --set-disabled '*' 
+runcmd:
+  - date > /tmp/cloud-init-date.log
+  - sestatus > /tmp/sestatus.log
+  - chmod a+rwt /tmp
+  - /usr/sbin/restorecon -R /tmp
+  - setenforce 0
+  - ls -al /var/lib/rpm > /tmp/var-lib-rpm.log
+  - sed -i 's/^proxy=/#proxy=/' /etc/yum.conf /etc/dnf/dnf.conf
+  - sed -i 's/^failovermethod/#failovermethod/' /etc/yum.repos.d/opm.repo
+  - dnf config-manager --set-disabled cyclecloud 
+  - dnf config-manager --set-disabled epel
+  - dnf config-manager --set-disabled cuda
+  - dnf config-manager --set-disabled azure-cli
+  - systemctl stop update-client-package.timer
+  - systemctl disable update-client-package.timer
+  - systemctl stop update-client-package.service
+  - systemctl disable update-client-package.service
+  - systemctl list-units > /tmp/list-units.log
+  - mv /usr/local/bin/update-client-package.sh /usr/local/bin/update-client-package.sh-$$
+  - date > /tmp/cloud-init-done.log
+'''
         
         [[[configuration]]]
         cyclecloud.discoverable=true
@@ -239,6 +265,36 @@ runcmd:
     ComputerName=${strcat(toLower(substr(ClusterName,0,4)),"-lc",substr(ClusterName,-1,1),"top01")}
     
     SubnetId =  ${(toggle_TopNodeSubnetId is false) ? SubnetId : TopNodeSubnetId}
+    CloudInit = '''#cloud-config
+ssh_pwauth: yes
+
+# Uncomment for ephemeral disk on /tmp
+mounts:
+- [ ephemeral0, /tmp ]
+
+# NOTE: Disabling repos must be done one at time
+#       For isolated compute nodes we use --set-disabled '*' 
+runcmd:
+  - date > /tmp/cloud-init-date.log
+  - sestatus > /tmp/sestatus.log
+  - chmod a+rwt /tmp
+  - /usr/sbin/restorecon -R /tmp
+  - setenforce 0
+  - ls -al /var/lib/rpm > /tmp/var-lib-rpm.log
+  - sed -i 's/^proxy=/#proxy=/' /etc/yum.conf /etc/dnf/dnf.conf
+  - sed -i 's/^failovermethod/#failovermethod/' /etc/yum.repos.d/opm.repo
+  - dnf config-manager --set-disabled cyclecloud 
+  - dnf config-manager --set-disabled epel
+  - dnf config-manager --set-disabled cuda
+  - dnf config-manager --set-disabled azure-cli
+  - systemctl stop update-client-package.timer
+  - systemctl disable update-client-package.timer
+  - systemctl stop update-client-package.service
+  - systemctl disable update-client-package.service
+  - systemctl list-units > /tmp/list-units.log
+  - mv /usr/local/bin/update-client-package.sh /usr/local/bin/update-client-package.sh-$$
+  - date > /tmp/cloud-init-done.log
+'''
     
         [[[configuration]]]
         [[[cluster-init pbspro:login]]]
@@ -260,7 +316,37 @@ runcmd:
     tags.OmniaCentralUpdateManager = false
     tags.UpdateSchedule = 4
     
-     SubnetId =  ${(toggle_TopNodeSubnetId is false) ? SubnetId : TopNodeSubnetId}
+    SubnetId =  ${(toggle_TopNodeSubnetId is false) ? SubnetId : TopNodeSubnetId}
+    CloudInit = '''#cloud-config
+ssh_pwauth: yes
+
+# Uncomment for ephemeral disk on /tmp
+mounts:
+- [ ephemeral0, /tmp ]
+
+# NOTE: Disabling repos must be done one at time
+#       For isolated compute nodes we use --set-disabled '*' 
+runcmd:
+  - date > /tmp/cloud-init-date.log
+  - sestatus > /tmp/sestatus.log
+  - chmod a+rwt /tmp
+  - /usr/sbin/restorecon -R /tmp
+  - setenforce 0
+  - ls -al /var/lib/rpm > /tmp/var-lib-rpm.log
+  - sed -i 's/^proxy=/#proxy=/' /etc/yum.conf /etc/dnf/dnf.conf
+  - sed -i 's/^failovermethod/#failovermethod/' /etc/yum.repos.d/opm.repo
+  - dnf config-manager --set-disabled cyclecloud 
+  - dnf config-manager --set-disabled epel
+  - dnf config-manager --set-disabled cuda
+  - dnf config-manager --set-disabled azure-cli
+  - systemctl stop update-client-package.timer
+  - systemctl disable update-client-package.timer
+  - systemctl stop update-client-package.service
+  - systemctl disable update-client-package.service
+  - systemctl list-units > /tmp/list-units.log
+  - mv /usr/local/bin/update-client-package.sh /usr/local/bin/update-client-package.sh-$$
+  - date > /tmp/cloud-init-done.log
+'''
     
         [[[configuration]]]
         [[[cluster-init pbspro:login]]]
