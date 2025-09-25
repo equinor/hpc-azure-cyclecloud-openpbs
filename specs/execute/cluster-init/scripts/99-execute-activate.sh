@@ -1,0 +1,1 @@
+../stages/activate.sh

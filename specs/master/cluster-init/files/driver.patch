@@ -1,0 +1,11 @@
+--- /opt/cycle/pbspro/venv/lib/python3.6/site-packages/pbspro/driver.py-orig	2021-09-02 09:56:28.003260552 +0200
++++ /opt/cycle/pbspro/venv/lib/python3.6/site-packages/pbspro/driver.py	2021-09-02 09:56:35.298021248 +0200
+@@ -212,7 +212,7 @@
+             try:
+                 try:
+                     ndicts = self.pbscmd.qmgr_parsed("list", "node", node.hostname)
+-                    if ndicts and ndicts[0].get("ccnodeid"):
++                    if ndicts and ndicts[0].get("resources_available.ccnodeid"):
+                         logging.info(
+                             "ccnodeid is already defined on %s. Skipping", node
+                         )

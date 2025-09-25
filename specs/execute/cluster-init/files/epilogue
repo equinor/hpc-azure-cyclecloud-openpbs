@@ -1,0 +1,61 @@
+#!/bin/bash
+exit 0
+BACKUP_ROOT=/project/subadmin/backup/azure
+JETPACK=/opt/cycle/jetpack/bin/jetpack
+PBSNODES=/opt/pbs/bin/pbsnodes
+LOCATION=$($JETPACK config azure.metadata.compute.location)
+SUB=$($JETPACK config azure.metadata.compute.subscriptionId)
+TAGS=$($JETPACK config azure.metadata.compute.tags)
+VMSIZE=$($JETPACK  config  azure.metadata.compute.vmSize)
+VMID=$($JETPACK  config  azure.metadata.compute.vmId)
+CYCLEID=$($JETPACK  config  cyclecloud.instance.id)
+CYCLESTARTTIME=$($JETPACK  config  cyclecloud.instance.startTime)
+CCHOSTNAME=$($JETPACK  config  cyclecloud.instance.hostname)
+POST_IDLE_TIME=$($JETPACK config cyclecloud.cluster.autoscale.idle_time_after_jobs)
+CATCH_JOB_X=$($PBSNODES  ${CCHOSTNAME} | grep "job-exclusive")
+IS_NOT_JOB_X=$?
+LAUNCHTIME=$($JETPACK config azure.metadata.compute.tags|perl -ne 'print "$1\n" if /LaunchTime:([\w\.\-:\+]+)/')
+NODEFILE=/var/spool/pbs/aux/$1
+#MULTINODE=$(wc -l ${NODEFILE}|cut -d " " -f1)
+MULTINODE=$(cat ${NODEFILE}|uniq|wc -l | cut -d " " -f1)
+CLUSTERNAME=$(echo $TAGS | tr ";" "\n"| grep -i clustername|cut -d':' -f2)
+MASTERNAME=$(grep PBS_SERVER /etc/pbs.conf | cut -d '=' -f2|head -1)
+CYCLESTARTDIR=${BACKUP_ROOT}/${SUB}/${LOCATION}/${CLUSTERNAME}/${MASTERNAME}/cyclestart
+SUBS="SUBS=(NONE)"
+if  [ ${MULTINODE} -gt "1" ]
+then
+	declare -a seen_nodes
+	readarray -t NODES < <(tail -n +2 ${NODEFILE}|uniq )
+	#readarray -t NODES < <(tail -n +2 ${NODEFILE} |  cut -d '.' -f1 )
+	SUBS="SUBS=("
+	for node in "${NODES[@]}"
+	do
+		node_sn=$(echo $node| cut -d '.' -f1 )
+		if [ ! -f ${CYCLESTARTDIR}/$node_sn ]			# fix case error in pbs nodefile
+		then
+			node_sn=$( ls ${CYCLESTARTDIR}| grep -i $node_sn )
+		fi
+		answer=$( cat "${CYCLESTARTDIR}/$node_sn")
+		SUBS="${SUBS}${answer}:"
+	done
+	SUBS=$(echo ${SUBS} | sed 's/.$/)/')
+	#SUBS=${SUBS:0:$(($(#SUBS)-1))}")"
+fi
+	
+ 
+LAUNCHSECS=$(date -d "$LAUNCHTIME" +"%s")
+JOBEND=$(date  +"%s")
+
+
+DEST=$BACKUP_ROOT/${SUB}/${LOCATION}/${CLUSTERNAME}/${MASTERNAME}/account_extra
+
+[ -d $DEST ] || mkdir -p $DEST 
+
+TODAY=$(date +"%Y%m%d")
+
+TIMESTAMP=$(date +"%m/%d/%Y %T")
+
+
+LOGINFO="${TIMESTAMP};JOBID=$1:ACCOUNT=$9;Queue=$8;VMsize=${VMSIZE};CYCLEID=${CYCLEID};CCStartTime=${CYCLESTARTTIME};JOBEND=${JOBEND};POSTIDLE=${POST_IDLE_TIME};JOBX=${IS_NOT_JOB_X};${SUBS}"
+#disable for now
+#echo $LOGINFO >> ${DEST}/${TODAY}

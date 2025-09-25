@@ -1,0 +1,5 @@
+#!/bin/sh
+#
+# Version control in https://github.com/equinor/hpc-azure-cyclecloud.git/projects/pbspro_cc8/specs/master/cluster-init/files/
+#
+curl -s --noproxy 169.254.169.254 -H Metadata:true "http://169.254.169.254/metadata/instance?api-version=2021-05-01"  | jq -r .compute.storageProfile.imageReference.id

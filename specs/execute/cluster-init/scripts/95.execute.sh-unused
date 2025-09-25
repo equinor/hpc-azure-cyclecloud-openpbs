@@ -1,0 +1,42 @@
+#!/bin/bash
+PROG=$( basename $0 ) 
+
+PARENT="/prog/util/lib/install/cycleops/cluster-init"
+SCRIPTS="${PARENT}/scripts"
+FILES="$( dirname $0 )/../files"
+
+#
+# just so we know where this came from 
+#
+echo "$PROG: Initialized from $0 at `date` as user `id -a`" 
+
+#
+# If this is available from shared storage , same basename , run that instead, use the below as fallback
+# 
+#if [ $( id -u ) -ne 0 -a -x ${SCRIPTS}/${PROG} ]
+#then 
+#	sudo "${SCRIPTS}/${PROG}" $* && exit 0
+#fi
+
+echo "lets fix the grouping for nodes coming from outside pbs"
+myhostname=$(/usr/bin/hostname)
+
+JETPACK="/opt/cycle/jetpack/bin/jetpack"
+
+ungrouped=$($JETPACK config pbspro.resource.ungrouped | tr '[:upper:]' '[:lower:]' 2>&1)
+
+while true;
+do
+	echo "running /opt/pbs/bin/qmgr -c set node ${myhostname} resources_available.ungrouped = ${ungrouped}"
+        /opt/pbs/bin/qmgr -c "set node ${myhostname} resources_available.ungrouped = ${ungrouped}"
+	if [ $? -eq 1 ]; then
+		echo "command failed .... retrying"
+	else
+		echo "command run.... carry on"
+	        break	
+	fi
+done
+
+# exit 0 no matter what - or CycleCloud will retry
+#
+exit 0

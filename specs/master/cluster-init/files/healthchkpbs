@@ -1,0 +1,168 @@
+#!/bin/bash
+#
+# Version control in https://github.com/equinor/hpc-azure-cyclecloud.git/projects/pbspro_cc8/specs/master/cluster-init/files/
+#
+PROG=$( basename $0 ) 
+DIR=$( dirname $0 )
+HOST=$( hostname -s ) 
+LOGFACILITY="local2"
+
+function logprint {
+	local LVL=$1
+	shift
+	echo "${PROG}: $*" >&2
+	logger -t ${PROG} -p ${LOGFACILITY}.${LVL} $*
+}
+
+
+[[ -d /opt/torque/bin ]] && export PATH="/opt/torque/bin:/opt/torque/sbin:/opt/maui/bin:${PATH}:/sbin:/usr/sbin:${DIR}"; export PATH
+[[ -d /opt/pbs/bin ]]    && export PATH="/opt/pbs/bin:/opt/pbs/sbin:${PATH}:/sbin:/usr/sbin:${DIR}"; export PATH
+
+#
+# Services definition
+#
+PORTS[1]="15001"
+SERVICES[1]="pbs"
+PROCS[1]="pbs"
+
+#
+# No configurable items below here ...
+#
+DATETIME=$( date '+%F %T' )
+RUNDIR="/var/run/${PROG}"
+ISSUES=0
+RERUN=""
+DELETED=""
+
+# Create state dir
+mkdir -p "${RUNDIR}" || exit 2
+
+# Sleep a random time to avoid all clusters kicking in at once
+sleep $(( RANDOM % 10 ))
+
+for I in ${!PORTS[*]}
+do
+    for PORT in ${PORTS[${I}]}
+    do
+        TESTRC=0
+        if netstat -ant | egrep -q "^tcp.*:${PORT}.*LISTEN"
+        then
+            logprint info "Service ${SERVICES[${I}]} on port ${PORT} has a listener and seems OK on ${HOST}" >&2
+            continue
+        fi
+
+        logprint error  "Service ${SERVICES[${I}]} on port(s) ${PORT} has no network listener on ${HOST}"
+        #
+        # Do not restart during system startups
+        #
+        UPMINUTES=$( awk '{ print int($1 / 60) }' /proc/uptime )
+        if [[ ${UPMINUTES} -gt 20 ]]
+        then
+            systemctl restart ${SERVICES[${I}]} && sleep 5
+        else
+            logprint warn "Service ${SERVICES[${I}]} on port ${PORT} not restarted due to uptime being < 20 minutes" >&2
+            continue
+        fi
+        for n in 30 20 10
+        do
+            netstat -ant | egrep -q "^tcp.*:${PORT}.*LISTEN"
+            TESTRC=$?
+            if [[ ${TESTRC} -eq 0 ]]
+            then
+               logprint warn "After service ${SERVICES[${I}]} restart, port ${PORT} has a listener on ${HOST}"
+               break
+            fi
+            sleep 10
+        done
+        [[ ${TESTRC} -eq 0 ]] && continue
+        logprint error "ERROR: Service ${SERVICES[${I}]} does not start"
+        if [[ -n ${MAILTO} ]]
+        then
+            echo "This needs immediate attention. No listener for TCP port ${PORT} after start" | mail -s "ERROR: Service ${SERVICES[${I}]} does not start on ${HOST}" ${MAILTO}
+        fi
+    done
+done
+
+#
+# Check on re-runs for running jobs
+#
+for J in $( qstat -r | awk '{ if ( $5 == "--" ) print $1 }' | tee "${RUNDIR}/qstat-r.txt" )
+do
+	if egrep -q "^${J}" "${RUNDIR}/qstat-r-prev.txt" >/dev/null 2>&1
+	then
+		(( ISSUES++ ))
+		if egrep -q "^${J}" "${RUNDIR}/reruns.log" >/dev/null 2>&1
+		then
+			logprint error "qrerun already attempted for job ${J%%.*}"
+		elif [[ -z "${RERUN}" ]] 
+		then
+			logprint warn "qrerun for job ${J%%.*}"
+			qrerun -W force "${J%%.*}"
+			echo "${J}" >> "${RUNDIR}/reruns.log"
+			RERUN="${J%%.*}"
+		else
+			logprint error "qrerun may be needed for job ${J%%.*}, but doing just one rerun per iteration"
+		fi
+    fi
+done
+cp "${RUNDIR}/qstat-r.txt" "${RUNDIR}/qstat-r-prev.txt"
+
+for J in $( qselect -s E | tee "${RUNDIR}/qselect-e.txt" )
+do
+	if egrep -q "^${J}" "${RUNDIR}/qselect-e-prev.txt" >/dev/null 2>&1
+	then
+		(( ISSUES++ ))
+		if egrep -q "^${J}" "${RUNDIR}/deleted.log" >/dev/null 2>&1
+		then
+			logprint error "delete already attempted for job ${J%%.*}"
+		elif [[ -z "${DELETED}" ]]
+		then
+			logprint error "qdel force for job ${J%%.*}"
+			qdel -W force "${J%%.*}"
+			echo "${J}" >> "${RUNDIR}/deleted.log"
+			DELETED="${J%%.*}"
+		fi
+    fi
+done
+cp "${RUNDIR}/qselect-e.txt" "${RUNDIR}/qselect-e-prev.txt"
+
+echo "#" > "${RUNDIR}/highruncount.txt"
+for J in $( qselect -s Q )
+do
+	HIGHRUNCOUNT=$( qstat -f "${J%%.*}" | awk '{ if ( $1 == "run_count" && $NF > 100 ) print $NF }' ) 
+	[[ -z ${HIGHRUNCOUNT} ]] && continue 
+	echo "${J}" >> "${RUNDIR}/highruncount.txt"
+	if egrep -q "^${J}" "${RUNDIR}/highruncount-prev.txt" >/dev/null 2>&1
+	then
+		logprint warn "Job ${J%%.*} has a run count of ${HIGHRUNCOUNT}"
+		(( ISSUES++ ))
+		RESTARTSEC=$( date "+%s" )
+		PREVRESTARTSEC=${RESTARTSEC}
+		if [ -r "${RUNDIR}/restarttime.log" ]
+		then
+			PREVRESTARTSEC=$( cat "${RUNDIR}/restarttime.log" )
+			(( DIFFSEC = RESTARTSEC - PREVRESTARTSEC ))
+			if [[ ${DIFFSEC} -lt 60 ]]
+			then
+				logprint warn "pbs service restart was already attempted ${DIFFSEC} seconds ago"
+				break
+			fi
+		fi
+		logprint error "Restarting pbs service. Job ${J%%.*} has a run count of ${HIGHRUNCOUNT}"
+		systemctl restart pbs
+		date "+%s" > "${RUNDIR}/restarttime.log"
+		break
+    fi
+done
+cp "${RUNDIR}/highruncount.txt" "${RUNDIR}/highruncount-prev.txt"
+
+PCTFULL=$( df -l --output=pcent /var/spool/pbs | tail -1 | tr -d ' %' )
+if [[ ${PCTFULL} -ge 80 ]]
+then
+	logprint error "Attempting automatic cleanup of server_logs and sched_logs. /var/spool/pbs is ${PCTFULL}% full"
+	find /var/spool/pbs/server_logs/ /var/spool/pbs/sched_logs/ -type f -mtime +10 -delete
+fi
+
+logprint info "${ISSUES} job issues found - /var/spool/pbs is ${PCTFULL}% full"
+
+# vim:ts=4:sw=4

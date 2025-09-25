@@ -1,0 +1,11 @@
+{
+  "__comment__": "This file was copied from specs/master/cluster-init/files/eq_submit_hook_cc.json",
+  "disable_eager_packing": true,
+  "enabled": true,
+  "logging": {
+    "level": "INFO",
+    "filename": "/opt/cycle/pbspro/eq_submit_hook.log",
+    "filemode": "a",
+    "format": "%(asctime)s %(levelname)s %(message)s"
+  }
+}

@@ -1,0 +1,21 @@
+--- /opt/cycle/pbspro/venv/lib/python3.6/site-packages/hpc/autoscale/job/job.py-orig	2021-09-02 10:58:25.314519516 +0200
++++ /opt/cycle/pbspro/venv/lib/python3.6/site-packages/hpc/autoscale/job/job.py	2021-09-02 10:59:00.423725100 +0200
+@@ -72,8 +72,16 @@
+         self.__iterations_remaining = iterations
+ 
+         _check_type(node_count=node_count, type=int)
+-        self.__node_count = node_count
+-        self.__nodes_remaining = node_count
++        if node_count >= 40 :
++            self.__node_count = node_count + 4
++            self.__nodes_remaining = node_count + 4
++        elif node_count >= 20 :
++            self.__node_count = node_count + 2
++            self.__nodes_remaining = node_count + 2
++        else :
++            self.__node_count = node_count + 0
++            self.__nodes_remaining = node_count + 0
++
+ 
+         _check_type(colocated=colocated, type=bool)
+         self.__colocated = colocated

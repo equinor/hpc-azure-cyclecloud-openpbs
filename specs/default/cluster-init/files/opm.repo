@@ -1,0 +1,8 @@
+[opm]
+name=Open Porous Media Initiative
+baseurl=https://www.opm-project.org/package/redhat/$releasever
+enabled=0
+gpgcheck=0
+gpgkey=https://www.opm-project.org/package/RPM-GPG-KEY-OPM
+#failovermethod=roundrobin
+#proxy=http://www-proxy.statoil.no:80

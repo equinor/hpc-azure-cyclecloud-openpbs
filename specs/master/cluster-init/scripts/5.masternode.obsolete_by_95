@@ -1,0 +1,106 @@
+#!/bin/sh
+PROG=$( basename $0 ) 
+
+PARENT="/prog/util/lib/install/cycleops/cluster-init"
+SCRIPTS="${PARENT}/scripts"
+FILES="$( dirname $0 )/../files"
+
+#
+# just so we know where this came from 
+#
+echo "$PROG: Initialized from $0 at `date` as user `id -a`" 
+
+#
+# If this is available from shared storage , same basename , run that instead, use the below as fallback
+# 
+if [ $( id -u ) -ne 0 -a -x ${SCRIPTS}/${PROG} ]
+then 
+	sudo "${SCRIPTS}/${PROG}" $* && exit 0
+fi
+
+
+sudo /opt/pbs/bin/qmgr <<EOF
+#
+# Additional managers
+#
+set server managers = hrbu@*
+set server managers += markr@*
+set server managers += kbjo@*
+set server managers += root@*
+#
+# Job history
+#
+set server job_history_enable=True
+#
+# Create and define queue normal
+#
+create queue normal
+set queue normal queue_type = Execution
+set queue normal resources_default.place = scatter:excl:group=group_id
+set queue normal resources_default.slot_type = normal
+set queue normal resources_default.ungrouped = false
+set queue normal default_chunk.slot_type = normal
+set queue normal default_chunk.ungrouped = false
+set queue normal enabled = True
+set queue normal started = True
+#
+# Create and define queue short
+#
+create queue short
+set queue short queue_type = Execution
+set queue short resources_default.place = pack:group=group_id
+set queue short resources_default.slot_type = short
+set queue short resources_default.ungrouped = false
+set queue short default_chunk.slot_type = short
+set queue short default_chunk.ungrouped = false
+set queue short enabled = True
+set queue short started = True
+#
+# Create and define queue nc24v3
+#
+create queue nc24v3
+set queue nc24v3 queue_type = Execution
+set queue nc24v3 resources_default.place = scatter:excl:group=group_id
+set queue nc24v3 resources_default.slot_type = nc24v3
+set queue nc24v3 resources_default.ungrouped = false
+set queue nc24v3 default_chunk.slot_type = nc24v3
+set queue nc24v3 default_chunk.ungrouped = false
+set queue nc24v3 enabled = True
+set queue nc24v3 started = True
+#
+# Create and define queue hb120
+#
+create queue hb120
+set queue hb120 queue_type = Execution
+set queue hb120 resources_default.place = scatter:excl:group=group_id
+set queue hb120 resources_default.slot_type = hb120
+set queue hb120 resources_default.ungrouped = false
+set queue hb120 default_chunk.slot_type = hb120
+set queue hb120 default_chunk.ungrouped = false
+set queue hb120 enabled = True
+set queue hb120 started = True
+#
+# Create and define queue h16
+#
+#create queue h16
+#set queue h16 queue_type = Execution
+#set queue h16 resources_default.place = scatter:excl:group=group_id
+#set queue h16 resources_default.slot_type = h16
+#set queue h16 resources_default.ungrouped = false
+#set queue h16 default_chunk.slot_type = h16
+#set queue h16 default_chunk.ungrouped = false
+#set queue h16 enabled = True
+#set queue h16 started = True
+#
+#
+# Set normal queue as default, then delete workq
+#
+set server default_queue = normal
+delete queue workq
+delete queue htcq
+EOF
+
+#
+# exit 0 no matter what - or CycleCloud will retry
+#
+exit 0
