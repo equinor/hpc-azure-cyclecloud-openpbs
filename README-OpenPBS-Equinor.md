@@ -11,7 +11,7 @@ Assuming that subops is a sibling repo, cut & paste this command:
 cp -v README-OpenPBS-Equinor.md ../subops/docs/implementation/Azure-OpenPBS.md
  -->
 
-Our [CycleCloud OpenPBS] repository is a fork of [Azure/cyclecloud-pbspro](https://github.com/Azure/cyclecloud-pbspro), and is used in addition to our [main Azure CycleCloud repository](https://github.com/equinor/hpc-azure-cyclecloud-openpbs)
+Our [CycleCloud OpenPBS](https://github.com/equinor/hpc-azure-cyclecloud-openpbs) repository is a fork of [Azure/cyclecloud-pbspro](https://github.com/Azure/cyclecloud-pbspro), and is used in addition to our [main Azure CycleCloud repository](https://github.com/equinor/hpc-azure-cyclecloud-openpbs)
 
 In CycleCloud we use this OpenPBS component (a.k.a project in CC terms) on top of our main CycleCloud repository in [hpc-azure-cyclecloud](https://github.com/equinor/hpc-azure-cyclecloud) where the *shared-equinor* project is maintained
 
