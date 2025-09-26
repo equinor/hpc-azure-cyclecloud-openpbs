@@ -1,6 +1,12 @@
 # Equinor CycleCloud OpenPBS project
 
-<!-- TBD: Perhaps this should be included in mkdocs updates -->
+<!-- 
+When changed copy to Subops repo under docs/implementation
+
+Assuming that is a sibling repo:
+
+cp -v README-OpenPBS-Equinor.md ../subops/docs/implementation/Azure-OpenPBS.md
+ -->
 
 Our [CycleCloud OpenPBS fork] is a for of [Azure/cyclecloud-pbspro](https://github.com/Azure/cyclecloud-pbspro), and is used in addition to our [main Azure CycleCloud repository](https://github.com/equinor/hpc-azure-cyclecloud-openpbs)
 
