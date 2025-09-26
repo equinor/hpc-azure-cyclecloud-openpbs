@@ -1,16 +1,21 @@
 # Equinor CycleCloud OpenPBS project
 
 <!-- 
-When changed copy to Subops repo under docs/implementation
 
-Assuming that is a sibling repo:
+The source of this file is in https://github.com/equinor/hpc-azure-cyclecloud-openpbs/blob/development/README-OpenPBS-Equinor.md
+
+If changed, please copy to Subops repo under docs/implementation
+
+Assuming that subops is a sibling repo, cut & paste this command:
 
 cp -v README-OpenPBS-Equinor.md ../subops/docs/implementation/Azure-OpenPBS.md
  -->
 
-Our [CycleCloud OpenPBS fork] is a for of [Azure/cyclecloud-pbspro](https://github.com/Azure/cyclecloud-pbspro), and is used in addition to our [main Azure CycleCloud repository](https://github.com/equinor/hpc-azure-cyclecloud-openpbs)
+Our [CycleCloud OpenPBS] repository is a fork of [Azure/cyclecloud-pbspro](https://github.com/Azure/cyclecloud-pbspro), and is used in addition to our [main Azure CycleCloud repository](https://github.com/equinor/hpc-azure-cyclecloud-openpbs)
 
 In CycleCloud we use this OpenPBS component (a.k.a project in CC terms) on top of our main CycleCloud repository in [hpc-azure-cyclecloud](https://github.com/equinor/hpc-azure-cyclecloud) where the *shared-equinor* project is maintained
+
+We have changed this from being a project in our main [hpc-azure-cyclecloud](https://github.com/equinor/hpc-azure-cyclecloud) into a separate fork to be able to pull updates from Azure master branch a lot easier. We can also issue pull requests to Azure developers.
 
 **NOTE:** Never update the master branch. That will prevent us to merge in a safe and convenient way from the upstream Azure repository. The default/target branch to use for our fork is the *development* branch
 
