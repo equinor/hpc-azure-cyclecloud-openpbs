@@ -21,20 +21,25 @@ We have changed this from being a project in our main [hpc-azure-cyclecloud](htt
 
 ## Features
 
-Our changes and additions provide the following for OpenPBS:
+**NOTE:** We also add a number of cluster scripts and PBS hooks -  not described here.
+
+Our changes and additions provide the below for OpenPBS project as delivered from Azure:
 
 - RHEL 9 support
+
 - Skip package installs that are in our OS images
+
 - Isolated compute node support / Prevent updates from stalling compute node startup
+
 - No need for `/sched` being shared from scheduler service / master node
+
 - Login nodes no longer waits for scheduler node completion
+
 - Support AD join, i.e. pick up nodename changes correctly
 
 ## Implementation 
 
 The below includes only the changes / enhancements done our Azure PBS for (this repo)
-
-We also add a number of cluster scripts and PBS hooks -  not described here.
 
 ### RHEL 9 support
 
