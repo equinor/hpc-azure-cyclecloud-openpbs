@@ -29,8 +29,15 @@ done
 
 if [ -z "${FAILED}" ]
 then
-    echo -ne "\n${PROG}: All done. For upload do:\n    cyclecloud project upload azure-storage\n"
-    exit 0
+    if [ "$1" = "-u" ]
+    then
+        echo -ne "\n${PROG}: All done. Now uploading ...\n\n"
+        cyclecloud project upload azure-storage
+        exit $?
+    else
+        echo -ne "\n${PROG}: All done. For upload do:\n    cyclecloud project upload azure-storage\n"
+        exit 0
+    fi
 fi
 
 echo "${PROG}: The following files failed: ${FAILED}" 
