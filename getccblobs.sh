@@ -8,12 +8,13 @@ then
    exit 2
 fi
 
-LABEL=$( grep -A5 '^\[project' project.ini | sed -n 's/^label = //p' | tr '[:upper:]' '[:lower:]' )
-FILES=$( grep -A2 '^\[files'   project.ini | sed -n -e 's/,//g' -e 's/^Files = //p'  project.ini )
+LABEL=$( sed -n '/^\[project/,/^$/ s/^label = //p' project.ini | tr '[:upper:]' '[:lower:]' )
+FILES=$( sed -n -e 's/,//g' -e '/^\[blobs/,/^$/ s/^Files = //p' project.ini )
 
-[ -z "${LABEL}" ] && echo "${PROG}: No 'label = ' in project.init ?" >&2 && exit 2
-[ -z "${FILES}" ] && echo "${PROG}: No 'Files = ' in project.init ?" >&2 && exit 2
+[ -z "${LABEL}" ] && echo "${PROG}: No 'label = ' in project section project.ini ?" >&2 && exit 2
+[ -z "${FILES}" ] && echo "${PROG}: No 'Files = ' in blobs section in project.ini ?" >&2 && exit 2
 
+mkdir -p blobs 
 for F in ${FILES}
 do 
     echo -n "Get $F ... "
@@ -26,7 +27,11 @@ do
     fi
 done
 
-[ -z "${FAILED}" ] && exit 0
+if [ -z "${FAILED}" ]
+then
+    echo -ne "\n${PROG}: All done. For upload do:\n    cyclecloud project upload azure-storage\n"
+    exit 0
+fi
 
 echo "${PROG}: The following files failed: ${FAILED}" 
 exit 2
