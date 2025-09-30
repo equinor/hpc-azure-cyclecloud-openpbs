@@ -8,8 +8,8 @@ then
    exit 2
 fi
 
-LABEL=$( tr '[:upper:]' '[:lower:]' < project.ini | sed -n 's/^label = //p' )
-FILES=$( sed -n -e 's/,//g' -e 's/^Files = //p'  project.ini )
+LABEL=$( grep -A5 '^\[project' project.ini | sed -n 's/^label = //p' | tr '[:upper:]' '[:lower:]' )
+FILES=$( grep -A2 '^\[files'   project.ini | sed -n -e 's/,//g' -e 's/^Files = //p'  project.ini )
 
 [ -z "${LABEL}" ] && echo "${PROG}: No 'label = ' in project.init ?" >&2 && exit 2
 [ -z "${FILES}" ] && echo "${PROG}: No 'Files = ' in project.init ?" >&2 && exit 2
