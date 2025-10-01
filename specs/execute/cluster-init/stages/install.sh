@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# So we can run this standalone ... 
+[ -z "${CYCLECLOUD_PROJECT_PATH}" ] && CYCLECLOUD_PROJECT_PATH="/mnt/cluster-init/pbspro/"
+
 source "${CYCLECLOUD_PROJECT_PATH}/default/files/utils.sh" || exit 1
 source "${CYCLECLOUD_PROJECT_PATH}/default/files/default.sh" || fail
 
@@ -13,7 +16,7 @@ SERVER_HOSTNAME=$(get_server_hostname) || fail
 # TODO: this installation status should be done by jetpack before cluster-inits are run
 "${CYCLECLOUD_HOME}/system/embedded/bin/python" -c "import jetpack.converge as jc; jc._send_installation_status('warning')"
 
-if rpm -q "$PACKAGE_NAME"
+if rpm -q "${PACKAGE_NAME%.rpm}"
 then
     echo "$PACKAGE_NAME is already installed - no download/install needed"
 else
