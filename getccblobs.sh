@@ -10,6 +10,7 @@ fi
 
 LABEL=$( sed -n '/^\[project/,/^$/ s/^label = //p' project.ini | tr '[:upper:]' '[:lower:]' )
 FILES=$( sed -n -e 's/,//g' -e '/^\[blobs/,/^$/ s/^Files = //p' project.ini )
+DOWNLOADED=""
 
 [ -z "${LABEL}" ] && echo "${PROG}: No 'label = ' in project section project.ini ?" >&2 && exit 2
 [ -z "${FILES}" ] && echo "${PROG}: No 'Files = ' in blobs section in project.ini ?" >&2 && exit 2
@@ -17,19 +18,26 @@ FILES=$( sed -n -e 's/,//g' -e '/^\[blobs/,/^$/ s/^Files = //p' project.ini )
 mkdir -p blobs 
 for F in ${FILES}
 do 
-    echo -n "Get $F ... "
+    [ -s "blobs/${F}" ] && echo "${PROG}: blobs/${F} already in place. If you want to update, please delete." && continue
+    echo -n "${PROG}: Get $F ... "
     if wget -q -O "blobs/.tmp-$$-${F}" "${BASEURL}/cyclecloud-${LABEL}-blobs/${F}"
     then
         mv -f "blobs/.tmp-$$-${F}" "blobs/${F}" && echo "OK"
+        DOWNLOADED="${DOWNLOADED} ${F}" 
     else
         echo "FAILED"
-        FAILED="${FAILED} ${F}"
+        FAILED="${FAILED} ${F}"
     fi
 done
 
 if [ -z "${FAILED}" ]
 then
-    if [ "$1" = "-u" ]
+    if [ -z "${DOWNLOADED}" ]
+    then
+        echo "${PROG}: No downloads - all there. No further action should be needed"
+        exit 0
+    fi
+    if [ "$1" != "-n" ]
     then
         echo -ne "\n${PROG}: All done. Now uploading ...\n\n"
         cyclecloud project upload azure-storage
