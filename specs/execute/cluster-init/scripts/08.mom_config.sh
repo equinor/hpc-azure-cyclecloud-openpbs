@@ -36,7 +36,7 @@ then
     # Enable detailed mom debugging
     echo '$logevent 0xffffffff' >> /var/spool/pbs/mom_priv/config
     # Enforce memory limits
-    echo '$enforce mem' >> /var/spool/pbs/mom_priv/config
+    # echo '$enforce mem' >> /var/spool/pbs/mom_priv/config
     #
     # restart pbs_mom if running
     #
