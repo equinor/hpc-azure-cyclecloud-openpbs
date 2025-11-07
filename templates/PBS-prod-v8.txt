@@ -74,6 +74,7 @@ runcmd:
         pbspro.professional = false
         # Used in specs/default/cluster-init/files/utils.sh
         pbspro.scheduler = ${strcat(toLower(substr(ClusterName,0,4)),"-lc",substr(ClusterName,-1,1),"m")}
+        pbspro.memenforce = $PBSmemenforced
 
         # For fast spin-up after Deallocate, force an immediate re-converge on boot
         cyclecloud.converge_on_boot = true
@@ -692,6 +693,11 @@ Order=40
         Config.Plugin = pico.form.Dropdown
         Config.Entries := {[Label="OpenPBS spec 2.0.25"; Value="2.0.25"], [Label="OpenPBS spec 2.0.23"; Value="2.0.23"], [Label="OpenPBS spec 2.0.19"; Value="2.0.19"]}
         DefaultValue = 2.0.25
+
+        [[[parameter PBSmemenforced]]]
+        Label = Memory Limits Enforced
+        DefaultValue = false
+        ParameterType = Boolean
 
     [[parameters Cluster Init Host Config]]
         [[[parameter showhostconfigdir]]]
