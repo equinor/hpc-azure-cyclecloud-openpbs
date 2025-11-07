@@ -23,6 +23,7 @@ echo "$PROG: Initialized from $0 at `date` as user `id -a`"
 # 
 [ $( id -u ) -ne 0 ] && exec /usr/bin/sudo -n "$0" $* 2>&1
 
+MEMENFORCE=$( jetpack config pbspro.memenforce "False" )
 #
 # If this is available from shared storage , same basename , run that instead, use the below as fallback
 # ... or comment below line if you want to run the below directly
@@ -35,8 +36,14 @@ then
     sed -i 's|^\$usecp.*|$usecp *:/dev/null /dev/null|' /var/spool/pbs/mom_priv/config 
     # Enable detailed mom debugging
     echo '$logevent 0xffffffff' >> /var/spool/pbs/mom_priv/config
-    # Enforce memory limits
-    # echo '$enforce mem' >> /var/spool/pbs/mom_priv/config
+    if [ "${MEMENFORCE}" = "True" ]
+    then
+        echo "$PROG: Memory limits enforced" >&2
+        # Enforce memory limits
+        echo '$enforce mem' >> /var/spool/pbs/mom_priv/config
+    else
+        echo "$PROG: Memory limits not enforced (pbspro.memenforce=${MEMENFORCE})" >&2
+    fi
     #
     # restart pbs_mom if running
     #
