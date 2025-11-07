@@ -696,7 +696,7 @@ Order=40
 
         [[[parameter PBSmemenforced]]]
         Label = Memory Limits Enforced
-        DefaultValue = false
+        DefaultValue = true
         ParameterType = Boolean
 
     [[parameters Cluster Init Host Config]]
