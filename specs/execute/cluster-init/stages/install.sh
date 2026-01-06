@@ -70,9 +70,11 @@ NODE_CREATED_GUARD="pbs.nodecreated"
 if [[ -f "$NODE_CREATED_GUARD" ]]; then
     echo "Node has already been created, skipping joining checks"
 else
-    NODE_ATTRS=$(/opt/pbs/bin/pbsnodes "$EXECUTE_HOSTNAME") || fail
-    NODE_ID=$(jetpack config cyclecloud.node.id) || fail
-    if ! echo "$NODE_ATTRS" | bool grep -qi "$NODE_ID"; then
+    #NODE_ATTRS=$(/opt/pbs/bin/pbsnodes "$EXECUTE_HOSTNAME") || fail
+    #NODE_ID=$(jetpack config cyclecloud.node.id) || fail
+    #if ! echo "$NODE_ATTRS" | bool grep -qi "$NODE_ID"; then
+    NNAMES=$( /opt/pbs/bin/pbsnodes "$EXECUTE_HOSTNAME" |& grep -ci "$EXECUTE_HOSTNAME" )
+    if [ "$NNAMES" -lt 2 ]; then
         fail "Stale entry found for $EXECUTE_HOSTNAME. Waiting for autoscaler to update this before joining."
     fi
 
