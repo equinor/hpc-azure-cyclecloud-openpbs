@@ -8,7 +8,8 @@ source "${CYCLECLOUD_PROJECT_PATH}/default/files/default.sh" || fail
 
 "${CYCLECLOUD_PROJECT_PATH}/default/scripts/hwlocs-install.sh" || fail
 
-EXECUTE_HOSTNAME=$(jetpack config hostname) || fail
+#EXECUTE_HOSTNAME=$(jetpack config hostname) || fail
+EXECUTE_HOSTNAME="none" # We use hostname -s instead since we change name for AD join
 PACKAGE_NAME=$(get_package_name "execution") || fail
 SERVER_HOSTNAME=$(get_server_hostname) || fail
 
