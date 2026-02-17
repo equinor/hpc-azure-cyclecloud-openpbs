@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Version control in https://github.com/equinor/hpc-azure-cyclecloud.git/projects/pbspro_cc8/specs/master/cluster-init/files/
+# Version control in https://github.com/equinor/hpc-azure-cyclecloud-openpbs/specs/master/cluster-init/files
 #
 PROG=$( basename $0 ) 
 DIR=$( dirname $0 )
@@ -33,6 +33,13 @@ RUNDIR="/var/run/${PROG}"
 ISSUES=0
 RERUN=""
 DELETED=""
+
+RUNNINGINST=$( pgrep "${PROG}" | wc -l )
+if [ ${RUNNINGINST} -gt 2 ]
+then
+	logprint error "Multiple instances of ${PROG} seems to be already running"
+	exit 2
+fi
 
 # Create state dir
 mkdir -p "${RUNDIR}" || exit 2
@@ -126,15 +133,21 @@ do
 done
 cp "${RUNDIR}/qselect-e.txt" "${RUNDIR}/qselect-e-prev.txt"
 
-echo "#" > "${RUNDIR}/highruncount.txt"
-for J in $( qselect -s Q )
+qstat -fFjson > "${RUNDIR}/qstat-f.json"
+QHIGHRUNH=$( jq -r '.Jobs | to_entries[] | select(.value.run_count >= 20 and .value.job_state == "H" ) | .key'  < "${RUNDIR}/qstat-f.json" 2>/dev/null )
+QHIGHRUNQ=$( jq -r '.Jobs | to_entries[] | select(.value.run_count >= 20 and .value.job_state == "Q" ) | .key'  < "${RUNDIR}/qstat-f.json" 2>/dev/null )
+
+if [[ -n ${QHIGHRUNH} ]]
+then
+	logprint warn "Releasing held jobs due to high run count: ${QHIGHRUNH}"
+	qrls -h so ${QHIGHRUNH}
+fi
+
+for J in ${QHIGHRUNQ}
 do
-	HIGHRUNCOUNT=$( qstat -f "${J%%.*}" | awk '{ if ( $1 == "run_count" && $NF > 100 ) print $NF }' ) 
-	[[ -z ${HIGHRUNCOUNT} ]] && continue 
-	echo "${J}" >> "${RUNDIR}/highruncount.txt"
 	if egrep -q "^${J}" "${RUNDIR}/highruncount-prev.txt" >/dev/null 2>&1
 	then
-		logprint warn "Job ${J%%.*} has a run count of ${HIGHRUNCOUNT}"
+		logprint warn "Job ${J%%.*} has a high run count"
 		(( ISSUES++ ))
 		RESTARTSEC=$( date "+%s" )
 		PREVRESTARTSEC=${RESTARTSEC}
@@ -148,13 +161,13 @@ do
 				break
 			fi
 		fi
-		logprint error "Restarting pbs service. Job ${J%%.*} has a run count of ${HIGHRUNCOUNT}"
+		logprint error "Restarting pbs service. Job ${J%%.*} has a run count > 20"
 		systemctl restart pbs
 		date "+%s" > "${RUNDIR}/restarttime.log"
 		break
     fi
 done
-cp "${RUNDIR}/highruncount.txt" "${RUNDIR}/highruncount-prev.txt"
+echo "${QHIGHRUNQ}" > "${RUNDIR}/highruncount-prev.txt"
 
 PCTFULL=$( df -l --output=pcent /var/spool/pbs | tail -1 | tr -d ' %' )
 if [[ ${PCTFULL} -ge 80 ]]
