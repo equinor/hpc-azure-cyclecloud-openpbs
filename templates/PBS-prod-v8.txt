@@ -66,7 +66,7 @@ runcmd:
         version = 1.0.0
 
         [[[cluster-init pbspro:default:]]]
-	    version = $PBSspec
+        version = $PBSspec
         Optional = false
 
         [[[configuration]]]
@@ -80,7 +80,7 @@ runcmd:
         cyclecloud.converge_on_boot = true
         cyclecloud.enable_chef = false        
         SIGurl=$SIGurl
-	    host.config.directories = $HostConfigDirectories
+        host.config.directories = $HostConfigDirectories
 
         # Disable normal NFS exports and mounts
         cyclecloud.mounts.sched.disabled = true
@@ -104,14 +104,13 @@ runcmd:
         lustre.options = $LustreMountOptions
         SharedEquinorSpec = $SharedEquinorSpec
         lustre.No_Lustre = $no_lustre
-	    #boot disk
-	
-     	[[[volume boot]]]
-      		Size = $BootDiskSize
-      		StorageAccountType = $BootDiskType
-      		#DiskIOPSReadWrite = 38400
-      		#DiskMBPSReadWrite = 2000
+        #boot disk
 
+        [[[volume boot]]]
+        Size = $BootDiskSize
+        StorageAccountType = $BootDiskType
+        #DiskIOPSReadWrite = 38400
+        #DiskMBPSReadWrite = 2000
 
         # 
         # Equinor mounts
@@ -122,7 +121,7 @@ runcmd:
         export_path = ${substr(NFSExportProg,(substr(NFSExportProg,7,1) == ":" ) ? 8 : (substr(NFSExportProg,8,1) == ":" ) ? 9 : (substr(NFSExportProg,9,1) == ":" ) ? 10 : (substr(NFSExportProg,10,1) == ":" ) ? 11 : (substr(NFSExportProg,11,1) == ":" ) ? 12 : (substr(NFSExportProg,12,1) == ":" ) ? 13 : (substr(NFSExportProg,13,1) == ":" ) ? 14 : 15 )}
         options = hard,intr,nfsvers=3,proto=tcp,nofail,_netdev
         address = ${substr(NFSExportProg,0,(substr(NFSExportProg,7,1) == ":" ) ? 7 : (substr(NFSExportProg,8,1) == ":" ) ? 8 : (substr(NFSExportProg,9,1) == ":" ) ? 9 : (substr(NFSExportProg,10,1) == ":" ) ? 10 : (substr(NFSExportProg,11,1) == ":" ) ? 11 : (substr(NFSExportProg,12,1) == ":" ) ? 12 : (substr(NFSExportProg,13,1) == ":" ) ? 13 : 14 )}
-	    disabled = ${(adjoin_am)}
+        disabled = ${(adjoin_am)}
 
         [[[configuration cyclecloud.mounts.private]]]
         type = nfs
@@ -130,7 +129,7 @@ runcmd:
         export_path = ${substr(NFSExportPrivate,(substr(NFSExportPrivate,7,1) == ":" ) ? 8 : (substr(NFSExportPrivate,8,1) == ":" ) ? 9 : (substr(NFSExportPrivate,9,1) == ":" ) ? 10 : (substr(NFSExportPrivate,10,1) == ":" ) ? 11 : (substr(NFSExportPrivate,11,1) == ":" ) ? 12 : (substr(NFSExportPrivate,12,1) == ":" ) ? 13 : (substr(NFSExportPrivate,13,1) == ":" ) ? 14 : 15 )}
         options = hard,intr,nfsvers=3,proto=tcp,nofail,_netdev
         address = ${substr(NFSExportPrivate,0,(substr(NFSExportPrivate,7,1) == ":") ? 7 : (substr(NFSExportPrivate,8,1) == ":") ? 8 : (substr(NFSExportPrivate,9,1) == ":") ? 9 : (substr(NFSExportPrivate,10,1) == ":") ? 10 : (substr(NFSExportPrivate,11,1) == ":") ? 11 : (substr(NFSExportPrivate,12,1) == ":") ? 12 : (substr(NFSExportPrivate,13,1) == ":") ? 13 : 14 )}
-	    disabled = ${(adjoin_am)}
+        disabled = ${(adjoin_am)}
 
         [[[configuration cyclecloud.mounts.scratch]]]
         type = nfs
@@ -138,7 +137,7 @@ runcmd:
         export_path = ${substr(NFSExportScratch,(substr(NFSExportScratch,7,1) == ":" ) ? 8 : (substr(NFSExportScratch,8,1) == ":" ) ? 9 : (substr(NFSExportScratch,9,1) == ":" ) ? 10 : (substr(NFSExportScratch,10,1) == ":" ) ? 11 : (substr(NFSExportScratch,11,1) == ":" ) ? 12 : (substr(NFSExportScratch,12,1) == ":" ) ? 13 : (substr(NFSExportScratch,13,1) == ":" ) ? 14 : 15 )}
         options = hard,intr,nfsvers=3,proto=tcp,nofail,_netdev
         address = ${substr(NFSExportScratch,0,(substr(NFSExportScratch,7,1) == ":") ? 7 : (substr(NFSExportScratch,8,1) == ":") ? 8 : (substr(NFSExportScratch,9,1) == ":") ? 9 : (substr(NFSExportScratch,10,1) == ":") ? 10 : (substr(NFSExportScratch,11,1) == ":") ? 11 : (substr(NFSExportScratch,12,1) == ":") ? 12 : (substr(NFSExportScratch,13,1) == ":") ? 13 : 14 )}
-	    disabled = ${(adjoin_am)}
+        disabled = ${(adjoin_am)}
 
         [[[configuration cyclecloud.mounts.project]]]
         type = nfs
@@ -146,7 +145,7 @@ runcmd:
         export_path = ${substr(NFSExportProject,(substr(NFSExportProject,7,1) == ":" ) ? 8 : (substr(NFSExportProject,8,1) == ":" ) ? 9 : (substr(NFSExportProject,9,1) == ":" ) ? 10 : (substr(NFSExportProject,10,1) == ":" ) ? 11 : (substr(NFSExportProject,11,1) == ":" ) ? 12 : (substr(NFSExportProject,12,1) == ":" ) ? 13 : (substr(NFSExportProject,13,1) == ":" ) ? 14 : 15 )}
         options = hard,intr,nfsvers=3,proto=tcp,nofail,_netdev
         address = ${substr(NFSExportProject,0,(substr(NFSExportProject,7,1) == ":") ? 7 : (substr(NFSExportProject,8,1) == ":") ? 8 : (substr(NFSExportProject,9,1) == ":") ? 9 : (substr(NFSExportProject,10,1) == ":") ? 10 : (substr(NFSExportProject,11,1) == ":") ? 11 : (substr(NFSExportProject,12,1) == ":") ? 12 : (substr(NFSExportProject,13,1) == ":") ? 13 : 14 )}
-	    disabled = ${(adjoin_am)}
+        disabled = ${(adjoin_am)}
 
         [[[configuration cyclecloud.mounts.work]]]
         type = nfs
@@ -154,7 +153,7 @@ runcmd:
         export_path = ${substr(NFSExportWork,(substr(NFSExportWork,7,1) == ":" ) ? 8 : (substr(NFSExportWork,8,1) == ":" ) ? 9 : (substr(NFSExportWork,9,1) == ":" ) ? 10 : (substr(NFSExportWork,10,1) == ":" ) ? 11 : (substr(NFSExportWork,11,1) == ":" ) ? 12 : (substr(NFSExportWork,12,1) == ":" ) ? 13 : (substr(NFSExportWork,13,1) == ":" ) ? 14 : 15 )}
         options = hard,intr,nfsvers=3,proto=tcp,nofail,_netdev
         address = ${substr(NFSExportWork,0,(substr(NFSExportWork,7,1) == ":") ? 7 : (substr(NFSExportWork,8,1) == ":") ? 8 : (substr(NFSExportWork,9,1) == ":") ? 9 : (substr(NFSExportWork,10,1) == ":") ? 10 : (substr(NFSExportWork,11,1) == ":") ? 11 : (substr(NFSExportWork,12,1) == ":") ? 12 : (substr(NFSExportWork,13,1) == ":") ? 13 : 14 )}
-	    disabled = ${(adjoin_am)}
+        disabled = ${(adjoin_am)}
 
 
     [[node master]]
@@ -300,7 +299,7 @@ runcmd:
         [[[configuration]]]
         [[[cluster-init pbspro:login]]]
         #[[[cluster-init pbspro:login:2.0.19]]]
-	    version = $PBSspec
+        version = $PBSspec
 
         Optional = True
         [[[network-interface eth0]]]
@@ -351,7 +350,7 @@ runcmd:
     
         [[[configuration]]]
         [[[cluster-init pbspro:login]]]
-	    version = $PBSspec 
+        version = $PBSspec 
         Optional = True
         [[[network-interface eth0]]]
         AssociatePublicIpAddress = $ExecuteNodesPublic
@@ -418,7 +417,7 @@ runcmd:
         [[[configuration]]]
             pbspro.slot_type = $QueueNameQ3
         [[[cluster-init pbspro:execute]]]
-    	    version = $PBSspec
+            version = $PBSspec
             Optional = True
         [[[network-interface eth0]]]
             AssociatePublicIpAddress = $ExecuteNodesPublic
@@ -437,7 +436,7 @@ runcmd:
         [[[configuration]]]
             pbspro.slot_type = $QueueNameQ4
         [[[cluster-init pbspro:execute]]]
-    	    version = $PBSspec
+            version = $PBSspec
             Optional = True
         [[[network-interface eth0]]]
             AssociatePublicIpAddress = $ExecuteNodesPublic
@@ -456,7 +455,7 @@ runcmd:
         [[[configuration]]]
             pbspro.slot_type = $QueueNameQ5
         [[[cluster-init pbspro:execute]]]
-    	    version = $PBSspec
+            version = $PBSspec
             Optional = True
         [[[network-interface eth0]]]
             AssociatePublicIpAddress = $ExecuteNodesPublic
@@ -475,7 +474,7 @@ runcmd:
         [[[configuration]]]
             pbspro.slot_type = $QueueNameQ6
         [[[cluster-init pbspro:execute]]]
-    	    version = $PBSspec
+            version = $PBSspec
             Optional = True
         [[[network-interface eth0]]]
             AssociatePublicIpAddress = $ExecuteNodesPublic
@@ -494,7 +493,7 @@ runcmd:
         [[[configuration]]]
             pbspro.slot_type = $QueueNameQ7
         [[[cluster-init pbspro:execute]]]
-	    version = $PBSspec
+           version = $PBSspec
         #[[[cluster-init pbspro:execute:2.0.19]]]
             Optional = True
         [[[network-interface eth0]]]
@@ -514,7 +513,7 @@ runcmd:
         [[[configuration]]]
             pbspro.slot_type = $QueueNameQ8
         [[[cluster-init pbspro:execute]]]
-    	    version = $PBSspec
+            version = $PBSspec
             Optional = True
         [[[network-interface eth0]]]
             AssociatePublicIpAddress = $ExecuteNodesPublic
@@ -533,7 +532,7 @@ runcmd:
         [[[configuration]]]
             # The extra / migration slot
         [[[cluster-init pbspro:execute]]]
-    	    version = $PBSspec
+            version = $PBSspec
             Optional = True
         [[[network-interface eth0]]]
             AssociatePublicIpAddress = $ExecuteNodesPublic
@@ -752,7 +751,7 @@ Order=40
         Required = True
         Config.Plugin = pico.form.QueryDropdown
         Config.Query = select name from Equinor.CustomImages where ( Image_Function == "compute"  || Image_Function == "adm"  || Image_Function == "gen" ) &&  name isnt undefined &&  version isnt undefined order by Name
-	    Conditions.Excluded := master_image_overide is true
+        Conditions.Excluded := master_image_overide is true
 
         [[[parameter MasterImageOverride]]]
         Label = Free Text Master Image Name
@@ -772,7 +771,7 @@ Order=40
         Required = True
         Config.Plugin = pico.form.QueryDropdown
         Config.Query = select name from Equinor.CustomImages where ( Image_Function == "x2go"   || Image_Function == "top" || Image_Function == "gen" ) &&  name isnt undefined  &&  version isnt undefined order by Name
-	    Conditions.Excluded := topnode_image_overide is true
+        Conditions.Excluded := topnode_image_overide is true
 
         [[[parameter TopNodeImageOverride]]]
         Label = Free Text TopNode Image Name
