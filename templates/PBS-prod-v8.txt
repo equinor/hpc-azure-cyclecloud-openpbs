@@ -369,6 +369,8 @@ runcmd:
     ImageNameTest = ${  (q1_image_override == true ) ? strcat(SIGurl,"/",Q1ImageOverride) : (regexp("_H[BC]",MachineTypeQ1) == true  ) ? strcat(SIGurl,"/",HB120ImageName,"/versions/",ImageVersion) :  (regexp("_D",MachineTypeQ1) == true ) ? strcat(SIGurl,"/",D32ImageName,"/versions/",ImageVersion) : (regexp("_NC",MachineTypeQ1) == true ) ? strcat(SIGurl,"/",NC24v3ImageName,"/versions/",ImageVersion) : strcat(SIGurl,"/",DefaultImageName,"/versions/",ImageVersion)  }
     #Q1ImageName = ${  (regexp("_HB",MachineTypeQ1) == true  ) ? strcat(SIGurl,"/",HB120ImageName,"/versions/",ImageVersion) :  strcat(SIGurl,"/",D32ImageName,"/versions/",ImageVersion)  }
     Interruptible = $UseLowPrio1
+    EnableTerminateNotification = $UseLowPrio1
+    TerminateNotificationTimeout = 10
     AdditionalClusterInitSpecs = $ExecuteClusterInitSpecs
     tags.CostAllocationCode = ${(wbsQ1 is false) ? costallocationcode : costallocationcodeQ1}
     ComputerNamePrefix=${strcat(toLower(substr(ClusterName,0,4)),"-lc",substr(ClusterName,-1,1),"01-")}
@@ -390,6 +392,8 @@ runcmd:
     #ImageName = ${(q2_image_override == true ) ? strcat(SIGurl,"/",Q2ImageOverride) : ((isError(HW[MachineTypeQ2]) == true ) ? strcat(SIGurl,"/",DefaultImageName,"/versions/",ImageVersion) : (HW[MachineTypeQ2] == "D32") ? strcat(SIGurl,"/",D32ImageName,"/versions/",ImageVersion) : (HW[MachineTypeQ2] == "HC44" ) ? strcat(SIGurl,"/",HC44ImageName,"/versions/",ImageVersion) : (HW[MachineTypeQ2] == "HB120" ) ? strcat(SIGurl,"/",HB120ImageName,"/versions/",ImageVersion) :  (HW[MachineTypeQ2] == "NC24v3") ? strcat(SIGurl,"/",NC24v3ImageName,"/versions/",ImageVersion) : (HW[MachineTypeQ2] == "NC24v2") ? strcat(SIGurl,"/",NC24v2ImageName,"/versions/",ImageVersion) : "") }
     ImageName = ${  (q2_image_override == true ) ? strcat(SIGurl,"/",Q2ImageOverride) : (regexp("_H[BC]",MachineTypeQ2) == true  ) ? strcat(SIGurl,"/",HB120ImageName,"/versions/",ImageVersion) :  (regexp("_D",MachineTypeQ2) == true ) ? strcat(SIGurl,"/",D32ImageName,"/versions/",ImageVersion) : (regexp("_NC",MachineTypeQ2) == true ) ? strcat(SIGurl,"/",NC24v3ImageName,"/versions/",ImageVersion) : strcat(SIGurl,"/",DefaultImageName,"/versions/",ImageVersion)  }
     Interruptible = $UseLowPrio2
+    EnableTerminateNotification = $UseLowPrio2
+    TerminateNotificationTimeout = 10
     AdditionalClusterInitSpecs = $ExecuteClusterInitSpecs
     tags.CostAllocationCode = ${(wbsQ2 is false) ? costallocationcode : costallocationcodeQ2}
     ComputerNamePrefix=${strcat(toLower(substr(ClusterName,0,4)),"-lc",substr(ClusterName,-1,1),"02-")}
@@ -409,6 +413,8 @@ runcmd:
     #ImageName = ${(q3_image_override == true ) ? strcat(SIGurl,"/",Q3ImageOverride) : ((isError(HW[MachineTypeQ3]) == true ) ? strcat(SIGurl,"/",DefaultImageName,"/versions/",ImageVersion) : (HW[MachineTypeQ3] == "D32") ? strcat(SIGurl,"/",D32ImageName,"/versions/",ImageVersion) : (HW[MachineTypeQ3] == "HC44" ) ? strcat(SIGurl,"/",HC44ImageName,"/versions/",ImageVersion) : (HW[MachineTypeQ3] == "HB120" ) ? strcat(SIGurl,"/",HB120ImageName,"/versions/",ImageVersion) :  (HW[MachineTypeQ3] == "NC24v3") ? strcat(SIGurl,"/",NC24v3ImageName,"/versions/",ImageVersion) : (HW[MachineTypeQ3] == "NC24v2") ? strcat(SIGurl,"/",NC24v2ImageName,"/versions/",ImageVersion) : "") }
     ImageName = ${  (q3_image_override == true ) ? strcat(SIGurl,"/",Q3ImageOverride) : (regexp("_H[BC]",MachineTypeQ3) == true  ) ? strcat(SIGurl,"/",HB120ImageName,"/versions/",ImageVersion) :  (regexp("_D",MachineTypeQ3) == true ) ? strcat(SIGurl,"/",D32ImageName,"/versions/",ImageVersion) : (regexp("_NC",MachineTypeQ3) == true ) ? strcat(SIGurl,"/",NC24v3ImageName,"/versions/",ImageVersion) : strcat(SIGurl,"/",DefaultImageName,"/versions/",ImageVersion)  }
     Interruptible = $UseLowPrio3
+    EnableTerminateNotification = $UseLowPrio3
+    TerminateNotificationTimeout = 10
     AdditionalClusterInitSpecs = $ExecuteClusterInitSpecs
     tags.CostAllocationCode = ${(wbsQ3 is false) ? costallocationcode : costallocationcodeQ3}
     ComputerNamePrefix=${strcat(toLower(substr(ClusterName,0,4)),"-lc",substr(ClusterName,-1,1),"03-")}
@@ -428,6 +434,8 @@ runcmd:
     #ImageName = ${(q4_image_override == true ) ? strcat(SIGurl,"/",Q4ImageOverride) : ((isError(HW[MachineTypeQ4]) == true ) ? strcat(SIGurl,"/",DefaultImageName,"/versions/",ImageVersion) : (HW[MachineTypeQ4] == "D32") ? strcat(SIGurl,"/",D32ImageName,"/versions/",ImageVersion) : (HW[MachineTypeQ4] == "HC44" ) ? strcat(SIGurl,"/",HC44ImageName,"/versions/",ImageVersion) : (HW[MachineTypeQ4] == "HB120" ) ? strcat(SIGurl,"/",HB120ImageName,"/versions/",ImageVersion) :  (HW[MachineTypeQ4] == "NC24v3") ? strcat(SIGurl,"/",NC24v3ImageName,"/versions/",ImageVersion) : (HW[MachineTypeQ4] == "NC24v2") ? strcat(SIGurl,"/",NC24v2ImageName,"/versions/",ImageVersion) : "") }
     ImageName = ${  (q4_image_override == true ) ? strcat(SIGurl,"/",Q4ImageOverride) : (regexp("_H[BC]",MachineTypeQ4) == true  ) ? strcat(SIGurl,"/",HB120ImageName,"/versions/",ImageVersion) :  (regexp("_D",MachineTypeQ4) == true ) ? strcat(SIGurl,"/",D32ImageName,"/versions/",ImageVersion) : (regexp("_NC",MachineTypeQ4) == true ) ? strcat(SIGurl,"/",NC24v3ImageName,"/versions/",ImageVersion) : strcat(SIGurl,"/",DefaultImageName,"/versions/",ImageVersion)  }
     Interruptible = $UseLowPrio4
+    EnableTerminateNotification = $UseLowPrio4
+    TerminateNotificationTimeout = 10
     AdditionalClusterInitSpecs = $ExecuteClusterInitSpecs
     tags.CostAllocationCode = ${(wbsQ4 is false) ? costallocationcode : costallocationcodeQ4}
     ComputerNamePrefix=${strcat(toLower(substr(ClusterName,0,4)),"-lc",substr(ClusterName,-1,1),"04-")}
@@ -447,6 +455,8 @@ runcmd:
     #ImageName = ${(q5_image_override == true ) ? strcat(SIGurl,"/",Q5ImageOverride) : ((isError(HW[MachineTypeQ5]) == true ) ? strcat(SIGurl,"/",DefaultImageName,"/versions/",ImageVersion) : (HW[MachineTypeQ5] == "D32") ? strcat(SIGurl,"/",D32ImageName,"/versions/",ImageVersion) : (HW[MachineTypeQ5] == "HC44" ) ? strcat(SIGurl,"/",HC44ImageName,"/versions/",ImageVersion) : (HW[MachineTypeQ5] == "HB120" ) ? strcat(SIGurl,"/",HB120ImageName,"/versions/",ImageVersion) :  (HW[MachineTypeQ5] == "NC24v3") ? strcat(SIGurl,"/",NC24v3ImageName,"/versions/",ImageVersion) : (HW[MachineTypeQ5] == "NC24v2") ? strcat(SIGurl,"/",NC24v2ImageName,"/versions/",ImageVersion) : "") }
     ImageName = ${  (q5_image_override == true ) ? strcat(SIGurl,"/",Q5ImageOverride) : (regexp("_H[BC]",MachineTypeQ5) == true  ) ? strcat(SIGurl,"/",HB120ImageName,"/versions/",ImageVersion) :  (regexp("_D",MachineTypeQ5) == true ) ? strcat(SIGurl,"/",D32ImageName,"/versions/",ImageVersion) : (regexp("_NC",MachineTypeQ5) == true ) ? strcat(SIGurl,"/",NC24v3ImageName,"/versions/",ImageVersion) : strcat(SIGurl,"/",DefaultImageName,"/versions/",ImageVersion)  }
     Interruptible = $UseLowPrio5
+    EnableTerminateNotification = $UseLowPrio5
+    TerminateNotificationTimeout = 10
     AdditionalClusterInitSpecs = $ExecuteClusterInitSpecs
     tags.CostAllocationCode = ${(wbsQ5 is false) ? costallocationcode : costallocationcodeQ5}
     ComputerNamePrefix=${strcat(toLower(substr(ClusterName,0,4)),"-lc",substr(ClusterName,-1,1),"05-")}
@@ -466,6 +476,8 @@ runcmd:
     #ImageName = ${(q6_image_override == true ) ? strcat(SIGurl,"/",Q6ImageOverride) : ((isError(HW[MachineTypeQ6]) == true ) ? strcat(SIGurl,"/",DefaultImageName,"/versions/",ImageVersion) : (HW[MachineTypeQ6] == "D32") ? strcat(SIGurl,"/",D32ImageName,"/versions/",ImageVersion) : (HW[MachineTypeQ6] == "HC44" ) ? strcat(SIGurl,"/",HC44ImageName,"/versions/",ImageVersion) : (HW[MachineTypeQ6] == "HB120" ) ? strcat(SIGurl,"/",HB120ImageName,"/versions/",ImageVersion) :  (HW[MachineTypeQ6] == "NC24v3") ? strcat(SIGurl,"/",NC24v3ImageName,"/versions/",ImageVersion) : (HW[MachineTypeQ6] == "NC24v2") ? strcat(SIGurl,"/",NC24v2ImageName,"/versions/",ImageVersion) : "") }
     ImageName = ${  (q6_image_override == true ) ? strcat(SIGurl,"/",Q6ImageOverride) : (regexp("_H[BC]",MachineTypeQ6) == true  ) ? strcat(SIGurl,"/",HB120ImageName,"/versions/",ImageVersion) :  (regexp("_D",MachineTypeQ6) == true ) ? strcat(SIGurl,"/",D32ImageName,"/versions/",ImageVersion) : (regexp("_NC",MachineTypeQ6) == true ) ? strcat(SIGurl,"/",NC24v3ImageName,"/versions/",ImageVersion) : strcat(SIGurl,"/",DefaultImageName,"/versions/",ImageVersion)  }
     Interruptible = $UseLowPrio6
+    EnableTerminateNotification = $UseLowPrio6
+    TerminateNotificationTimeout = 10
     AdditionalClusterInitSpecs = $ExecuteClusterInitSpecs
     tags.CostAllocationCode = ${(wbsQ6 is false) ? costallocationcode : costallocationcodeQ6}
     ComputerNamePrefix=${strcat(toLower(substr(ClusterName,0,4)),"-lc",substr(ClusterName,-1,1),"06-")}
@@ -485,6 +497,8 @@ runcmd:
     #ImageName = ${(q7_image_override == true ) ? strcat(SIGurl,"/",Q7ImageOverride) : ((isError(HW[MachineTypeQ7]) == true ) ? strcat(SIGurl,"/",DefaultImageName,"/versions/",ImageVersion) : (HW[MachineTypeQ7] == "D32") ? strcat(SIGurl,"/",D32ImageName,"/versions/",ImageVersion) : (HW[MachineTypeQ7] == "HC44" ) ? strcat(SIGurl,"/",HC44ImageName,"/versions/",ImageVersion) : (HW[MachineTypeQ7] == "HB120" ) ? strcat(SIGurl,"/",HB120ImageName,"/versions/",ImageVersion) :  (HW[MachineTypeQ7] == "NC24v3") ? strcat(SIGurl,"/",NC24v3ImageName,"/versions/",ImageVersion) : (HW[MachineTypeQ7] == "NC24v2") ? strcat(SIGurl,"/",NC24v2ImageName,"/versions/",ImageVersion) : "") }
     ImageName = ${  (q7_image_override == true ) ? strcat(SIGurl,"/",Q7ImageOverride) : (regexp("_H[BC]",MachineTypeQ7) == true  ) ? strcat(SIGurl,"/",HB120ImageName,"/versions/",ImageVersion) :  (regexp("_D",MachineTypeQ7) == true ) ? strcat(SIGurl,"/",D32ImageName,"/versions/",ImageVersion) : (regexp("_NC",MachineTypeQ7) == true ) ? strcat(SIGurl,"/",NC24v3ImageName,"/versions/",ImageVersion) : strcat(SIGurl,"/",DefaultImageName,"/versions/",ImageVersion)  }
     Interruptible = $UseLowPrio7
+    EnableTerminateNotification = $UseLowPrio7
+    TerminateNotificationTimeout = 10
     AdditionalClusterInitSpecs = $ExecuteClusterInitSpecs
     tags.CostAllocationCode = ${(wbsQ7 is false) ? costallocationcode : costallocationcodeQ7}
     ComputerNamePrefix=${strcat(toLower(substr(ClusterName,0,4)),"-lc",substr(ClusterName,-1,1),"07-")}
@@ -505,6 +519,8 @@ runcmd:
     #ImageName = ${(q8_image_override == true ) ? strcat(SIGurl,"/",Q8ImageOverride) : ((isError(HW[MachineTypeQ8]) == true ) ? strcat(SIGurl,"/",DefaultImageName,"/versions/",ImageVersion) : (HW[MachineTypeQ8] == "D32") ? strcat(SIGurl,"/",D32ImageName,"/versions/",ImageVersion) : (HW[MachineTypeQ8] == "HC44" ) ? strcat(SIGurl,"/",HC44ImageName,"/versions/",ImageVersion) : (HW[MachineTypeQ8] == "HB120" ) ? strcat(SIGurl,"/",HB120ImageName,"/versions/",ImageVersion) :  (HW[MachineTypeQ8] == "NC24v3") ? strcat(SIGurl,"/",NC24v3ImageName,"/versions/",ImageVersion) : (HW[MachineTypeQ8] == "NC24v2") ? strcat(SIGurl,"/",NC24v2ImageName,"/versions/",ImageVersion) : "") }
     ImageName = ${  (q8_image_override == true ) ? strcat(SIGurl,"/",Q8ImageOverride) : (regexp("_H[BC]",MachineTypeQ8) == true  ) ? strcat(SIGurl,"/",HB120ImageName,"/versions/",ImageVersion) :  (regexp("_D",MachineTypeQ8) == true ) ? strcat(SIGurl,"/",D32ImageName,"/versions/",ImageVersion) : (regexp("_NC",MachineTypeQ8) == true ) ? strcat(SIGurl,"/",NC24v3ImageName,"/versions/",ImageVersion) : strcat(SIGurl,"/",DefaultImageName,"/versions/",ImageVersion)  }
     Interruptible = $UseLowPrio8
+    EnableTerminateNotification = $UseLowPrio8
+    TerminateNotificationTimeout = 10
     AdditionalClusterInitSpecs = $ExecuteClusterInitSpecs
     tags.CostAllocationCode = ${(wbsQ8 is false) ? costallocationcode : costallocationcodeQ8}
     ComputerNamePrefix=${strcat(toLower(substr(ClusterName,0,4)),"-lc",substr(ClusterName,-1,1),"08-")}
@@ -524,6 +540,8 @@ runcmd:
     #ImageName = ${(q9_image_override == true ) ? strcat(SIGurl,"/",Q9ImageOverride) : ((isError(HW[MachineTypeQ9]) == true ) ? strcat(SIGurl,"/",DefaultImageName,"/versions/",ImageVersion) : (HW[MachineTypeQ9] == "D32") ? strcat(SIGurl,"/",D32ImageName,"/versions/",ImageVersion) : (HW[MachineTypeQ9] == "HC44" ) ? strcat(SIGurl,"/",HC44ImageName,"/versions/",ImageVersion) : (HW[MachineTypeQ9] == "HB120" ) ? strcat(SIGurl,"/",HB120ImageName,"/versions/",ImageVersion) :  (HW[MachineTypeQ9] == "NC24v3") ? strcat(SIGurl,"/",NC24v3ImageName,"/versions/",ImageVersion) : (HW[MachineTypeQ9] == "NC24v2") ? strcat(SIGurl,"/",NC24v2ImageName,"/versions/",ImageVersion) : "") }
     ImageName = ${  (q9_image_override == true ) ? strcat(SIGurl,"/",Q9ImageOverride) : (regexp("_H[BC]",MachineTypeQ9) == true  ) ? strcat(SIGurl,"/",HB120ImageName,"/versions/",ImageVersion) :  (regexp("_D",MachineTypeQ9) == true ) ? strcat(SIGurl,"/",D32ImageName,"/versions/",ImageVersion) : (regexp("_NC",MachineTypeQ9) == true ) ? strcat(SIGurl,"/",NC24v3ImageName,"/versions/",ImageVersion) : strcat(SIGurl,"/",DefaultImageName,"/versions/",ImageVersion)  }
     Interruptible = $UseLowPrio9
+    EnableTerminateNotification = $UseLowPrio9
+    TerminateNotificationTimeout = 10
     AdditionalClusterInitSpecs = $ExecuteClusterInitSpecs
     tags.CostAllocationCode = ${(wbsQ9 is false) ? costallocationcode : costallocationcodeQ9}
     ComputerNamePrefix=${strcat(toLower(substr(ClusterName,0,4)),"-lc",substr(ClusterName,-1,1),"09-")}
