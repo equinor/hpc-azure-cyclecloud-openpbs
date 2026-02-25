@@ -370,7 +370,7 @@ runcmd:
     #Q1ImageName = ${  (regexp("_HB",MachineTypeQ1) == true  ) ? strcat(SIGurl,"/",HB120ImageName,"/versions/",ImageVersion) :  strcat(SIGurl,"/",D32ImageName,"/versions/",ImageVersion)  }
     Interruptible = $UseLowPrio1
     EnableTerminateNotification = $UseLowPrio1
-    TerminateNotificationTimeout = 10
+    TerminateNotificationTimeout = $Termination_Timeout
     AdditionalClusterInitSpecs = $ExecuteClusterInitSpecs
     tags.CostAllocationCode = ${(wbsQ1 is false) ? costallocationcode : costallocationcodeQ1}
     ComputerNamePrefix=${strcat(toLower(substr(ClusterName,0,4)),"-lc",substr(ClusterName,-1,1),"01-")}
@@ -393,7 +393,7 @@ runcmd:
     ImageName = ${  (q2_image_override == true ) ? strcat(SIGurl,"/",Q2ImageOverride) : (regexp("_H[BC]",MachineTypeQ2) == true  ) ? strcat(SIGurl,"/",HB120ImageName,"/versions/",ImageVersion) :  (regexp("_D",MachineTypeQ2) == true ) ? strcat(SIGurl,"/",D32ImageName,"/versions/",ImageVersion) : (regexp("_NC",MachineTypeQ2) == true ) ? strcat(SIGurl,"/",NC24v3ImageName,"/versions/",ImageVersion) : strcat(SIGurl,"/",DefaultImageName,"/versions/",ImageVersion)  }
     Interruptible = $UseLowPrio2
     EnableTerminateNotification = $UseLowPrio2
-    TerminateNotificationTimeout = 10
+    TerminateNotificationTimeout = $Termination_Timeout
     AdditionalClusterInitSpecs = $ExecuteClusterInitSpecs
     tags.CostAllocationCode = ${(wbsQ2 is false) ? costallocationcode : costallocationcodeQ2}
     ComputerNamePrefix=${strcat(toLower(substr(ClusterName,0,4)),"-lc",substr(ClusterName,-1,1),"02-")}
@@ -414,7 +414,7 @@ runcmd:
     ImageName = ${  (q3_image_override == true ) ? strcat(SIGurl,"/",Q3ImageOverride) : (regexp("_H[BC]",MachineTypeQ3) == true  ) ? strcat(SIGurl,"/",HB120ImageName,"/versions/",ImageVersion) :  (regexp("_D",MachineTypeQ3) == true ) ? strcat(SIGurl,"/",D32ImageName,"/versions/",ImageVersion) : (regexp("_NC",MachineTypeQ3) == true ) ? strcat(SIGurl,"/",NC24v3ImageName,"/versions/",ImageVersion) : strcat(SIGurl,"/",DefaultImageName,"/versions/",ImageVersion)  }
     Interruptible = $UseLowPrio3
     EnableTerminateNotification = $UseLowPrio3
-    TerminateNotificationTimeout = 10
+    TerminateNotificationTimeout = $Termination_Timeout
     AdditionalClusterInitSpecs = $ExecuteClusterInitSpecs
     tags.CostAllocationCode = ${(wbsQ3 is false) ? costallocationcode : costallocationcodeQ3}
     ComputerNamePrefix=${strcat(toLower(substr(ClusterName,0,4)),"-lc",substr(ClusterName,-1,1),"03-")}
@@ -435,7 +435,7 @@ runcmd:
     ImageName = ${  (q4_image_override == true ) ? strcat(SIGurl,"/",Q4ImageOverride) : (regexp("_H[BC]",MachineTypeQ4) == true  ) ? strcat(SIGurl,"/",HB120ImageName,"/versions/",ImageVersion) :  (regexp("_D",MachineTypeQ4) == true ) ? strcat(SIGurl,"/",D32ImageName,"/versions/",ImageVersion) : (regexp("_NC",MachineTypeQ4) == true ) ? strcat(SIGurl,"/",NC24v3ImageName,"/versions/",ImageVersion) : strcat(SIGurl,"/",DefaultImageName,"/versions/",ImageVersion)  }
     Interruptible = $UseLowPrio4
     EnableTerminateNotification = $UseLowPrio4
-    TerminateNotificationTimeout = 10
+    TerminateNotificationTimeout = $Termination_Timeout
     AdditionalClusterInitSpecs = $ExecuteClusterInitSpecs
     tags.CostAllocationCode = ${(wbsQ4 is false) ? costallocationcode : costallocationcodeQ4}
     ComputerNamePrefix=${strcat(toLower(substr(ClusterName,0,4)),"-lc",substr(ClusterName,-1,1),"04-")}
@@ -456,7 +456,7 @@ runcmd:
     ImageName = ${  (q5_image_override == true ) ? strcat(SIGurl,"/",Q5ImageOverride) : (regexp("_H[BC]",MachineTypeQ5) == true  ) ? strcat(SIGurl,"/",HB120ImageName,"/versions/",ImageVersion) :  (regexp("_D",MachineTypeQ5) == true ) ? strcat(SIGurl,"/",D32ImageName,"/versions/",ImageVersion) : (regexp("_NC",MachineTypeQ5) == true ) ? strcat(SIGurl,"/",NC24v3ImageName,"/versions/",ImageVersion) : strcat(SIGurl,"/",DefaultImageName,"/versions/",ImageVersion)  }
     Interruptible = $UseLowPrio5
     EnableTerminateNotification = $UseLowPrio5
-    TerminateNotificationTimeout = 10
+    TerminateNotificationTimeout = $Termination_Timeout
     AdditionalClusterInitSpecs = $ExecuteClusterInitSpecs
     tags.CostAllocationCode = ${(wbsQ5 is false) ? costallocationcode : costallocationcodeQ5}
     ComputerNamePrefix=${strcat(toLower(substr(ClusterName,0,4)),"-lc",substr(ClusterName,-1,1),"05-")}
@@ -477,7 +477,7 @@ runcmd:
     ImageName = ${  (q6_image_override == true ) ? strcat(SIGurl,"/",Q6ImageOverride) : (regexp("_H[BC]",MachineTypeQ6) == true  ) ? strcat(SIGurl,"/",HB120ImageName,"/versions/",ImageVersion) :  (regexp("_D",MachineTypeQ6) == true ) ? strcat(SIGurl,"/",D32ImageName,"/versions/",ImageVersion) : (regexp("_NC",MachineTypeQ6) == true ) ? strcat(SIGurl,"/",NC24v3ImageName,"/versions/",ImageVersion) : strcat(SIGurl,"/",DefaultImageName,"/versions/",ImageVersion)  }
     Interruptible = $UseLowPrio6
     EnableTerminateNotification = $UseLowPrio6
-    TerminateNotificationTimeout = 10
+    TerminateNotificationTimeout = Termination_Timeout
     AdditionalClusterInitSpecs = $ExecuteClusterInitSpecs
     tags.CostAllocationCode = ${(wbsQ6 is false) ? costallocationcode : costallocationcodeQ6}
     ComputerNamePrefix=${strcat(toLower(substr(ClusterName,0,4)),"-lc",substr(ClusterName,-1,1),"06-")}
@@ -498,7 +498,7 @@ runcmd:
     ImageName = ${  (q7_image_override == true ) ? strcat(SIGurl,"/",Q7ImageOverride) : (regexp("_H[BC]",MachineTypeQ7) == true  ) ? strcat(SIGurl,"/",HB120ImageName,"/versions/",ImageVersion) :  (regexp("_D",MachineTypeQ7) == true ) ? strcat(SIGurl,"/",D32ImageName,"/versions/",ImageVersion) : (regexp("_NC",MachineTypeQ7) == true ) ? strcat(SIGurl,"/",NC24v3ImageName,"/versions/",ImageVersion) : strcat(SIGurl,"/",DefaultImageName,"/versions/",ImageVersion)  }
     Interruptible = $UseLowPrio7
     EnableTerminateNotification = $UseLowPrio7
-    TerminateNotificationTimeout = 10
+    TerminateNotificationTimeout = $Termination_Timeout
     AdditionalClusterInitSpecs = $ExecuteClusterInitSpecs
     tags.CostAllocationCode = ${(wbsQ7 is false) ? costallocationcode : costallocationcodeQ7}
     ComputerNamePrefix=${strcat(toLower(substr(ClusterName,0,4)),"-lc",substr(ClusterName,-1,1),"07-")}
@@ -520,7 +520,7 @@ runcmd:
     ImageName = ${  (q8_image_override == true ) ? strcat(SIGurl,"/",Q8ImageOverride) : (regexp("_H[BC]",MachineTypeQ8) == true  ) ? strcat(SIGurl,"/",HB120ImageName,"/versions/",ImageVersion) :  (regexp("_D",MachineTypeQ8) == true ) ? strcat(SIGurl,"/",D32ImageName,"/versions/",ImageVersion) : (regexp("_NC",MachineTypeQ8) == true ) ? strcat(SIGurl,"/",NC24v3ImageName,"/versions/",ImageVersion) : strcat(SIGurl,"/",DefaultImageName,"/versions/",ImageVersion)  }
     Interruptible = $UseLowPrio8
     EnableTerminateNotification = $UseLowPrio8
-    TerminateNotificationTimeout = 10
+    TerminateNotificationTimeout = $Termination_Timeout
     AdditionalClusterInitSpecs = $ExecuteClusterInitSpecs
     tags.CostAllocationCode = ${(wbsQ8 is false) ? costallocationcode : costallocationcodeQ8}
     ComputerNamePrefix=${strcat(toLower(substr(ClusterName,0,4)),"-lc",substr(ClusterName,-1,1),"08-")}
@@ -541,7 +541,7 @@ runcmd:
     ImageName = ${  (q9_image_override == true ) ? strcat(SIGurl,"/",Q9ImageOverride) : (regexp("_H[BC]",MachineTypeQ9) == true  ) ? strcat(SIGurl,"/",HB120ImageName,"/versions/",ImageVersion) :  (regexp("_D",MachineTypeQ9) == true ) ? strcat(SIGurl,"/",D32ImageName,"/versions/",ImageVersion) : (regexp("_NC",MachineTypeQ9) == true ) ? strcat(SIGurl,"/",NC24v3ImageName,"/versions/",ImageVersion) : strcat(SIGurl,"/",DefaultImageName,"/versions/",ImageVersion)  }
     Interruptible = $UseLowPrio9
     EnableTerminateNotification = $UseLowPrio9
-    TerminateNotificationTimeout = 10
+    TerminateNotificationTimeout = $Termination_Timeout
     AdditionalClusterInitSpecs = $ExecuteClusterInitSpecs
     tags.CostAllocationCode = ${(wbsQ9 is false) ? costallocationcode : costallocationcodeQ9}
     ComputerNamePrefix=${strcat(toLower(substr(ClusterName,0,4)),"-lc",substr(ClusterName,-1,1),"09-")}
@@ -693,6 +693,14 @@ Order = 30
         Config.Plugin = pico.form.NumberTextBox
         Config.MinValue = 120
         Config.IntegerOnly = true
+
+    [[[parameter Termination_Timeout]]]
+        Label = Termination Timeout
+        Description = Time before termination timeout
+        DefaultValue = 10m
+        Config.Plugin = pico.form.StringTextBox
+        Config.NumLines = 1
+
 
 [parameters Software]
 Order=40
