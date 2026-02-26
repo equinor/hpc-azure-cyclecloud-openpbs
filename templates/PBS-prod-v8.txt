@@ -477,7 +477,7 @@ runcmd:
     ImageName = ${  (q6_image_override == true ) ? strcat(SIGurl,"/",Q6ImageOverride) : (regexp("_H[BC]",MachineTypeQ6) == true  ) ? strcat(SIGurl,"/",HB120ImageName,"/versions/",ImageVersion) :  (regexp("_D",MachineTypeQ6) == true ) ? strcat(SIGurl,"/",D32ImageName,"/versions/",ImageVersion) : (regexp("_NC",MachineTypeQ6) == true ) ? strcat(SIGurl,"/",NC24v3ImageName,"/versions/",ImageVersion) : strcat(SIGurl,"/",DefaultImageName,"/versions/",ImageVersion)  }
     Interruptible = $UseLowPrio6
     EnableTerminateNotification = $UseLowPrio6
-    TerminateNotificationTimeout = Termination_Timeout
+    TerminateNotificationTimeout = $Termination_Timeout
     AdditionalClusterInitSpecs = $ExecuteClusterInitSpecs
     tags.CostAllocationCode = ${(wbsQ6 is false) ? costallocationcode : costallocationcodeQ6}
     ComputerNamePrefix=${strcat(toLower(substr(ClusterName,0,4)),"-lc",substr(ClusterName,-1,1),"06-")}
@@ -697,10 +697,10 @@ Order = 30
     [[[parameter Termination_Timeout]]]
         Label = Termination Timeout
         Description = Time before termination timeout
-        DefaultValue = 10m
-        Config.Plugin = pico.form.StringTextBox
-        Config.NumLines = 1
-
+        DefaultValue = 10
+        Config.Plugin = pico.form.NumberTextBox
+        Config.MinValue = 5
+        Config.IntegerOnly = true
 
 [parameters Software]
 Order=40
