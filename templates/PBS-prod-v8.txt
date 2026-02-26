@@ -697,7 +697,7 @@ Order = 30
     [[[parameter Termination_Timeout]]]
         Label = Termination Timeout
         Description = Time before termination timeout
-        DefaultValue = 10
+        DefaultValue = 10M
         Config.Plugin = pico.form.StringTextBox
         Config.NumLines = 1
         #DefaultValue = 10
