@@ -698,9 +698,12 @@ Order = 30
         Label = Termination Timeout
         Description = Time before termination timeout
         DefaultValue = 10
-        Config.Plugin = pico.form.NumberTextBox
-        Config.MinValue = 5
-        Config.IntegerOnly = true
+        Config.Plugin = pico.form.StringTextBox
+        Config.NumLines = 1
+        #DefaultValue = 10
+        #Config.Plugin = pico.form.NumberTextBox
+        #Config.MinValue = 5
+        #Config.IntegerOnly = true
 
 [parameters Software]
 Order=40
