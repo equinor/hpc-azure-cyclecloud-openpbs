@@ -17,12 +17,21 @@ SERVER_HOSTNAME=$(get_server_hostname) || fail
 # TODO: this installation status should be done by jetpack before cluster-inits are run
 "${CYCLECLOUD_HOME}/system/embedded/bin/python" -c "import jetpack.converge as jc; jc._send_installation_status('warning')"
 
+for P in cjson chkconfig
+do
+    rpm -q "$P" && continue
+    echo "Install missing prereq $P ..."
+    sed -i '/proxy-swe/ s/#proxy=/proxy=/' /etc/yum.conf
+    dnf install -y --enablerepo=epel "$P"
+done
+
 if rpm -q "${PACKAGE_NAME%.rpm}"
 then
     echo "$PACKAGE_NAME is already installed - no download/install needed"
 else
     jetpack download --project pbspro "$PACKAGE_NAME" "/tmp" || fail
-    yum install -y -q "/tmp/$PACKAGE_NAME" || fail
+    # Equinor repo may have older / conflicting versions
+    yum install --disablerepo="equinor*" -y -q "/tmp/$PACKAGE_NAME" || fail
 fi
 
 if [[ -n "$SERVER_HOSTNAME" ]]; then

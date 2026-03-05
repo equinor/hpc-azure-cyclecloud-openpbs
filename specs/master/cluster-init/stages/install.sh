@@ -27,16 +27,17 @@ PBSPRO_AUTOSCALE_INSTALLER="cyclecloud-pbspro-pkg-${PBSPRO_AUTOSCALE_VERSION}.ta
 #EOF
 #chmod a+r "/sched/${CLUSTER_NAME}/azpbs.env" || fail
 
-if rpm -q cjson-devel
-then
-    echo "cjson-devel already present"
-else
+for P in cjson chkconfig
+do
+    rpm -q "$P" && continue
+    echo "Install missing prereq $P ..."
     sed -i '/proxy-swe/ s/#proxy=/proxy=/' /etc/yum.conf
-    dnf -y --enablerepo=epel install cjson-devel
-fi
+    dnf install -y --enablerepo=epel "$P"
+done
 
 jetpack download --project pbspro "$PACKAGE_NAME" "/tmp" || fail
-dnf install -y -q "/tmp/$PACKAGE_NAME" || fail
+# Equinor repo typically has older versions that we do not want
+dnf install --disablerepo=equinor* -y -q "/tmp/$PACKAGE_NAME" || fail
 
 mkdir -p -m 0755 "$PBSPRO_AUTOSCALE_PROJECT_HOME" || fail
 
@@ -45,7 +46,8 @@ mkdir -p -m 750 /var/spool/pbs/sched_priv || fail
 cp "${CYCLECLOUD_PROJECT_PATH}/default/templates/default/sched.config" /var/spool/pbs/sched_priv/sched_config || fail
 chmod 0644 /var/spool/pbs/sched_priv/sched_config || fail
 
-systemctl enable --now pbs || fail
+#systemctl enable --now pbs || fail
+systemctl start pbs && systemctl enable pbs
 
 source /etc/profile.d/pbs.sh || fail
 PATH=$PATH:/root/bin

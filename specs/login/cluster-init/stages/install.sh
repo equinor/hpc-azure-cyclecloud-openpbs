@@ -8,12 +8,21 @@ source "${CYCLECLOUD_PROJECT_PATH}/default/files/default.sh" || fail
 PACKAGE_NAME=$(get_package_name "client") || fail
 SERVER_HOSTNAME=$(get_server_hostname) || fail
 
+for P in cjson chkconfig
+do
+    rpm -q "$P" && continue
+    echo "Install missing prereq $P ..."
+    sed -i '/proxy-swe/ s/#proxy=/proxy=/' /etc/yum.conf
+    dnf install -y --enablerepo=epel "$P"
+done
+
 if rpm -q "$PACKAGE_NAME"
 then
     echo "$PACKAGE_NAME is already installed - no download/install needed"
 else
     jetpack download --project pbspro "$PACKAGE_NAME" "/tmp" || fail
-    yum install -y -q "/tmp/$PACKAGE_NAME" || fail
+    # Equinor repo may have older / conflicting versions
+    dnf install --disablerepo="equinor*"  -y -q "/tmp/$PACKAGE_NAME" || fail
 fi
 
 if [[ -n "$SERVER_HOSTNAME" ]]; then
