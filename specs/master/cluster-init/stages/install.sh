@@ -27,8 +27,16 @@ PBSPRO_AUTOSCALE_INSTALLER="cyclecloud-pbspro-pkg-${PBSPRO_AUTOSCALE_VERSION}.ta
 #EOF
 #chmod a+r "/sched/${CLUSTER_NAME}/azpbs.env" || fail
 
+if rpm -q cjson-devel
+then
+    echo "cjson-devel already present"
+else
+    sed -i '/proxy-swe/ s/#proxy=/proxy=/' /etc/yum.conf
+    dnf -y --enablerepo=epel install cjson-devel
+fi
+
 jetpack download --project pbspro "$PACKAGE_NAME" "/tmp" || fail
-yum install -y -q "/tmp/$PACKAGE_NAME" || fail
+dnf install -y -q "/tmp/$PACKAGE_NAME" || fail
 
 mkdir -p -m 0755 "$PBSPRO_AUTOSCALE_PROJECT_HOME" || fail
 
