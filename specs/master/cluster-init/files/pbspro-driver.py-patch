@@ -1,0 +1,35 @@
+*** pbspro/driver.py-orig	2026-03-05 19:25:43.719929351 +0100
+--- pbspro/driver.py	2026-03-05 19:39:56.305903885 +0100
+*************** def parse_jobs(
+*** 772,782 ****
+  
+          effective_node_count = max(node_count, 1)
+  
+          # htc jobs set ungrouped=true. see our default htcq
+          colocated = (
+              not is_smp
+              and queue.uses_placement
+!             and rdict.get("ungrouped", "false").lower() == "false"
+          )
+  
+          sharing = rdict["place"].get("sharing")
+--- 772,790 ----
+  
+          effective_node_count = max(node_count, 1)
+  
++         # cJson outputs unquoted booleans
++         # Before using cJson, booleans are strings
++         rungrouped=rdict.get("ungrouped", "false")
++         if isinstance(rungrouped, bool):
++             bgrouped=(rungrouped == False)
++         else:
++             bgrouped=(rungrouped.lower() == "false")
++ 
+          # htc jobs set ungrouped=true. see our default htcq
+          colocated = (
+              not is_smp
+              and queue.uses_placement
+!             and bgrouped
+          )
+  
+          sharing = rdict["place"].get("sharing")
