@@ -32,8 +32,13 @@ MEMENFORCE=$( jetpack config pbspro.memenforce "False" )
 
 if [ -w /var/spool/pbs/mom_priv/config ]
 then
-    # Change how out output files are delivered
-    sed -i 's|^\$usecp.*|$usecp *:/dev/null /dev/null|' /var/spool/pbs/mom_priv/config 
+    # Change how out output files are delivered, i.e. remove any settings and add our shared filesystems
+    sed -i '/^\$usecp/ d' /var/spool/pbs/mom_priv/config 
+    echo '$usecp *:/private/ /private/' >> /var/spool/pbs/mom_priv/config
+    echo '$usecp *:/project/ /project/' >> /var/spool/pbs/mom_priv/config
+    echo '$usecp *:/work/ /work/'       >> /var/spool/pbs/mom_priv/config
+    echo '$usecp *:/scratch/ /scratch/' >> /var/spool/pbs/mom_priv/config
+
     # Enable detailed mom debugging
     echo '$logevent 0xffffffff' >> /var/spool/pbs/mom_priv/config
     if [ "${MEMENFORCE}" = "True" ]
