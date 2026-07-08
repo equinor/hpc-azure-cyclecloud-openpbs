@@ -20,12 +20,12 @@ in CycleCloud by specifying the PBSPro OSS version.
 
 Note: When using the cluster that is shipped with CycleCloud, the autoscaler and default queues are already installed.
 
-First, download the installer pkg from GitHub. For example, you can download the [2.0.25 release here](https://github.com/Azure/cyclecloud-pbspro/releases/download/2.0.25/cyclecloud-pbspro-pkg-2.0.25.tar.gz)
+First, download the installer pkg from GitHub. For example, you can download the [2.0.26 release here](https://github.com/Azure/cyclecloud-pbspro/releases/download/2.0.26/cyclecloud-pbspro-pkg-2.0.26.tar.gz)
 
 ```bash
 # Prerequisite: python3, 3.6 or newer, must be installed and in the PATH
-wget https://github.com/Azure/cyclecloud-pbspro/releases/download/2.0.25/cyclecloud-pbspro-pkg-2.0.25.tar.gz
-tar xzf cyclecloud-pbspro-pkg-2.0.25.tar.gz
+wget https://github.com/Azure/cyclecloud-pbspro/releases/download/2.0.26/cyclecloud-pbspro-pkg-2.0.26.tar.gz
+tar xzf cyclecloud-pbspro-pkg-2.0.26.tar.gz
 cd cyclecloud-pbspro
 # Optional, but recommended. Adds relevant resources and enables strict placement
 ./initialize_pbs.sh
@@ -153,6 +153,13 @@ have. Here is an example of handling VM Size specific disk size
       "value": "size::2t"
    }
    ```
+
+### Dynamic Resources
+If you use dynamic resources, for example for License checking, make sure to update the sched_priv/config file to use the dynamic wrapper script located in `/opt/cycle/pbspro/server_dyn_res_wrapper.sh`. For example, if you have a dynamic resource called `server_dyn_res`, you would add the following line to your sched_priv/config file.
+
+```
+server_dyn_res: "myres !/opt/cycle/pbspro/server_dyn_res_wrapper.sh myres /path/to/my/script.sh"
+```
 
 # azpbs cli
 The `azpbs` cli is the main interface for all autoscaling behavior. Note that it has a fairly powerful autocomplete capabilities. For example, typing `azpbs create_nodes --vm-size ` and then you can tab-complete the list of possible VM Sizes. Autocomplete information is updated every `azpbs autoscale` cycle, but can also be refreshed manually by running `azpbs refresh_autocomplete`.
