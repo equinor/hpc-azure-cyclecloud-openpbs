@@ -7,7 +7,7 @@
 ##
 ##############################################################################
 
-[cluster PBS-prod-v9.1]
+[cluster PBS-prod-v9.2]
 FormLayout = selectionpanel
 Category = Equinor Production
 IconURL = https://communicationtoolbox.equinor.com/original/gallery/12366/files/original/816ece30-56bf-40f3-b362-56e96381f12f.png
